@@ -1,0 +1,103 @@
+{
+    "resourceType": "StarType",
+    "resources": [
+        {
+            "id": 1, 
+            "name": "Red Dwarf",
+            "description": "A small and relatively cool star, often found in the later stages of stellar evolution. Red dwarfs are the most common type of star in the universe, known for their longevity and low luminosity.",
+            "color": "#FF4500",
+            "minSize": 0.08,
+            "maxSize": 0.6,
+            "chance": 0.5,
+            "icon": "red_dwarf_icon.png",
+            "minPlanets": 1,
+            "maxPlanets": 5,
+            "planetChance": 0.7,
+            "baseHabitability": 0.3
+        },
+        {
+            "id": 2, 
+            "name": "Yellow Dwarf",
+            "description": "A medium-sized star, similar to our Sun. Yellow dwarfs are stable and have a long lifespan, making them ideal for supporting life on orbiting planets.",
+            "color": "#FFFF00",
+            "minSize": 0.6,
+            "maxSize": 1.5,
+            "chance": 0.3,
+            "icon": "yellow_dwarf_icon.png",
+            "minPlanets": 2,
+            "maxPlanets": 10,
+            "baseHabitability": 0.5,
+            "planetChance": 0.8
+        },
+        {
+            "id": 3, 
+            "name": "Blue Giant",
+            "description": "A large and very hot star, often found in the early stages of stellar evolution. Blue giants are known for their brightness and short lifespan.",
+            "color": "#0000FF",
+            "minSize": 1.5,
+            "maxSize": 10,
+            "chance": 0.15,
+            "icon": "blue_giant_icon.png",
+            "minPlanets": 1,
+            "maxPlanets": 4,
+            "baseHabitability": 0.1,
+            "planetChance": 0.4
+        },
+        {
+            "id": 4, 
+            "name": "White Dwarf",
+            "description": "The remnant core of a star that has exhausted its nuclear fuel. White dwarfs are very dense and hot, but they gradually cool over time.",
+            "color": "#FFFFFF",
+            "minSize": 0.6,
+            "maxSize": 1.4,
+            "chance": 0.05,
+            "icon": "white_dwarf_icon.png",
+            "minPlanets": 1,
+            "maxPlanets": 4,
+            "planetChance": 0.2,
+            "baseHabitability": 0.2
+        },
+        {
+            "id": 5, 
+            "name": "Neutron Star",
+            "description": "An extremely dense star formed from the remnants of a supernova explosion. Neutron stars are composed almost entirely of neutrons and have a very strong gravitational field.",
+            "color": "#808080",
+            "minSize": 1.4,
+            "maxSize": 3,
+            "chance": 0.02,
+            "icon": "neutron_star_icon.png",
+            "minPlanets": 1,
+            "maxPlanets": 4,
+            "planetChance": 0.3,
+            "baseHabitability": 0.05
+        },
+        {
+            "id": 6, 
+            "name": "Black Hole",
+            "description": "A region of spacetime exhibiting gravitational acceleration so strong that nothing can escape from it, not even light. Black holes are formed from the remnants of massive stars after they collapse.",
+            "color": "#000000",
+            "minSize": 3,
+            "maxSize": 100,
+            "chance": 0.01,
+            "icon": "black_hole_icon.png",
+            "minPlanets": 0,
+            "maxPlanets": 2,
+            "planetChance": 0.1,
+            "baseHabitability": 0
+        },
+        {
+            "id": 7, 
+            "name": "Red Supergiant",
+            "description": "A very large and luminous star that has expanded and cooled after exhausting the hydrogen in its core. Red supergiants are among the largest stars in the universe.",
+            "color": "#FF0000",
+            "minSize": 10,
+            "maxSize": 100,
+            "chance": 0.02,
+            "icon": "red_supergiant_icon.png",
+            "minPlanets": 1,
+            "maxPlanets": 5,
+            "planetChance": 0.5,
+            "baseHabitability": 0.2
+        }
+    ]
+}

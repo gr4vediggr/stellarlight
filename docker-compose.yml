@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        name: web
+    container_name: stellarlight-backend
+    environment:
+      - PORT=8080
+      - ASSET_FOLDER=./assets
+    ports:
+      - "8080:8080"
+    
+    
+
+
+  frontend:
+    build: ./frontend
+    container_name: stellarlight-frontend
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_API_URL=http://backend:8080
+      - VITE_WS_URL=ws://backend:8080/ws
+    depends_on:
+      - backend

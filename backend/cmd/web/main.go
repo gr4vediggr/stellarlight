@@ -6,10 +6,9 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 
-	"github.com/gr4vediggr/stellarlight/internal/gen"
 	"github.com/gr4vediggr/stellarlight/internal/resource"
-	"github.com/gr4vediggr/stellarlight/internal/utils"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -25,6 +24,8 @@ type appconfig struct {
 	// Define your application configuration here
 	assetFolder string
 	port        int
+
+	allowedOrigins []string // List of allowed origins for CORS
 }
 
 func loadEnvironment() (appconfig, error) {
@@ -32,14 +33,17 @@ func loadEnvironment() (appconfig, error) {
 
 	assetFolder := os.Getenv("ASSET_FOLDER") // Example of loading an environment variable
 	port := os.Getenv("PORT")
+	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+
 	portInt, err := strconv.Atoi(port)
 	if err != nil {
 		return appconfig{}, fmt.Errorf("invalid PORT value: %w", err)
 	}
 
 	return appconfig{
-		assetFolder: assetFolder,
-		port:        portInt,
+		assetFolder:    assetFolder,
+		port:           portInt,
+		allowedOrigins: strings.Split(allowedOrigins, ","),
 	}, nil
 }
 
@@ -96,7 +100,11 @@ func run() error {
 	e := app.createServer()
 	app.setupRoutes(e)
 
-	if err := e.Start(net.JoinHostPort("", fmt.Sprintf("%d", app.config.port))); err != nil {
+	// Use the correct path for cert/key files as mounted in docker-compose
+	certPath := "./cert/localhost.crt"
+	keyPath := "./cert/localhost.key"
+	port := app.config.port
+	if err := e.StartTLS(net.JoinHostPort("", fmt.Sprintf("%d", port)), certPath, keyPath); err != nil {
 		return err
 	}
 
@@ -107,7 +115,7 @@ func (app *app) createServer() *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
 
-	setupMiddleware(e)
+	setupMiddleware(e, app.config)
 
 	return e
 }
@@ -118,42 +126,40 @@ func (app *app) setupRoutes(e *echo.Echo) {
 		return c.String(200, "Welcome to the Empire API")
 	})
 	e.GET("/health", func(c echo.Context) error {
-		return c.String(200, "OK")
+
+		type HealthResponse struct {
+			Status string `json:"status"`
+			Ok     bool   `json:"ok"`
+		}
+
+		return c.JSON(200, HealthResponse{
+			Status: "OK",
+			Ok:     true,
+		})
 	})
-	e.POST("/galaxy-generate", func(c echo.Context) error {
-
-		var genConfig gen.GalaxyGenerationConfig
-		if err := c.Bind(&genConfig); err != nil {
-			return err
-		}
-
-		builder := gen.GalaxyBuilder{
-			StarTypes:   utils.MapToSlice(app.assets.StarTypes),
-			PlanetTypes: utils.MapToSlice(app.assets.PlanetTypes),
-		}
-		galaxy, err := builder.GenerateGalaxy(genConfig)
-		if err != nil {
-			return err
-		}
-
-		return c.JSON(200, galaxy)
-
-	})
+	e.POST("/galaxy-generate", http_handlers.CreateGalaxyHandler(app.assets))
 
 }
 
-func setupMiddleware(e *echo.Echo) {
-	// skipper := func(c echo.Context) bool {
-	// 	// Skip health check endpoint
-	// 	return c.Request().URL.Path == "/health"
-	// }
+func setupMiddleware(e *echo.Echo, config appconfig) {
+	// Enable CORS for all origins and methods
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: config.allowedOrigins,
+		AllowMethods: []string{
+			echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS,
+		},
+		AllowHeaders: []string{
+			echo.HeaderOrigin,
+			echo.HeaderContentType,
+			echo.HeaderAccept,
+			echo.HeaderAuthorization,
+		},
+		AllowCredentials: true,
+	}))
 	e.Use(middleware.RequestID())
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogStatus: true,
 		LogURI:    true,
-		BeforeNextFunc: func(c echo.Context) {
-			c.Set("customValueFromContext", 42)
-		},
 		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
 			requestId := c.Response().Header().Get(echo.HeaderXRequestID)
 			fmt.Printf("REQUEST: uri: %v, status: %v, request-id: %v\n", v.URI, v.Status, requestId)

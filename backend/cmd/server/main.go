@@ -1,37 +1,158 @@
 package main
 
 import (
-	"flag"
+	"context"
 	"fmt"
 	"log"
-	"net/http"
+	"net"
+	"os/signal"
+	"strconv"
+	"syscall"
+	"time"
 
-	"github.com/google/uuid"
-	"github.com/gr4vediggr/stellarlight/internal/server"
-	"github.com/gr4vediggr/stellarlight/internal/server/websocket"
+	"github.com/gr4vediggr/stellarlight/internal/auth"
+	"github.com/gr4vediggr/stellarlight/internal/config"
+	"github.com/gr4vediggr/stellarlight/internal/database"
+	"github.com/jackc/pgx/v5"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"golang.org/x/sync/errgroup"
 )
 
-var (
-	port = flag.Int("port", 8080, "Port to run the server on")
-)
+var ()
+
+type app struct {
+	config config.Config
+
+	server *echo.Echo
+	db     *pgx.Conn
+	// Dependencies
+	authService *auth.AuthService
+}
+
+func (a *app) initialize() error {
+	var err error
+	a.config, err = config.Load()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	a.db, err = pgx.Connect(context.Background(), a.config.DatabaseURL)
+	if err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	userRepo := database.NewPostgresUserStore(a.db)
+	a.authService = auth.NewService(userRepo, a.config.JWTSecret)
+
+	a.server, err = a.setupHttpServer()
+	if err != nil {
+		return fmt.Errorf("failed to setup HTTP server: %w", err)
+	}
+
+	return nil
+}
 
 func main() {
-	flag.Parse()
-
-	// Generate a unique server ID
-	serverID := uuid.New().String()
-	log.Printf("Starting server with ID: %s on port %d", serverID, *port)
-
-	hub := server.NewGameLobby()
-
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		hub.Serve(websocket.NewWebsocketClient, w, r)
-	})
-	go hub.Run()
-	addr := fmt.Sprintf(":%d", *port)
-	log.Printf("Server is listening on %s", addr)
-	if err := http.ListenAndServe(addr, nil); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	app := &app{}
+	if err := app.initialize(); err != nil {
+		panic(err)
 	}
+
+	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	eg, ctx := errgroup.WithContext(ctx)
+
+	eg.Go(func() error {
+		addr := net.JoinHostPort("", strconv.Itoa(app.config.Port))
+
+		log.Printf("Starting server on %s", addr)
+		var err error
+		if app.config.TLS.Enabled {
+			log.Printf("Using TLS with cert: %s, key: %s", app.config.TLS.CertFile, app.config.TLS.KeyFile)
+			err = app.server.StartTLS(addr, app.config.TLS.CertFile, app.config.TLS.KeyFile)
+		} else {
+			err = app.server.Start(addr)
+		}
+		if err != nil {
+			log.Printf("Server failed to start: %v", err)
+			return err
+		}
+		return nil
+	})
+
+	<-ctx.Done()
+
+	log.Println("Shutting down server...")
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+	if err := app.server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Server shutdown failed: %v", err)
+	}
+
+	err := eg.Wait()
+	if err != nil {
+		log.Printf("Error during shutdown: %v", err)
+	} else {
+		log.Println("Server shutdown gracefully")
+	}
+
+}
+
+func (app *app) setupHttpServer() (*echo.Echo, error) {
+	e := echo.New()
+
+	// Enable CORS for all origins and methods
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: app.config.AllowedOrigins,
+		AllowMethods: []string{
+			echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS,
+		},
+		AllowHeaders: []string{
+			echo.HeaderOrigin,
+			echo.HeaderContentType,
+			echo.HeaderAccept,
+			echo.HeaderAuthorization,
+		},
+		AllowCredentials: true,
+	}))
+	e.Use(middleware.RequestID())
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogStatus: true,
+		LogURI:    true,
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			requestId := c.Response().Header().Get(echo.HeaderXRequestID)
+			fmt.Printf("REQUEST: uri: %v, status: %v, request-id: %v\n", v.URI, v.Status, requestId)
+			return nil
+		},
+	}))
+
+	// Routes
+	app.setupRouter(e)
+
+	return e, nil
+}
+
+func (app *app) setupRouter(e *echo.Echo) {
+	h := auth.NewHandler(app.authService)
+
+	apiGroup := e.Group("/api")
+
+	authGroup := apiGroup.Group("/auth")
+	{
+		authGroup.POST("/register", h.Register)
+		authGroup.POST("/login", h.Login)
+		authGroup.POST("/refresh", h.RefreshToken)
+	}
+
+	userGroup := apiGroup.Group("/users", auth.RequireAuth(app.authService))
+	{
+		userGroup.PUT("/update-profile", h.UpdateProfile)
+	}
+
+	// Add other routes
 
 }

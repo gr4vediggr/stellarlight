@@ -38,8 +38,9 @@ func (b GalaxyBuilder) GenerateGalaxy(config GalaxyGenerationConfig) (*galaxy.Ga
 	var genFunc func() []Point
 	switch config.Shape {
 	case "spiral":
+		minDistance := 1 / math.Sqrt(float64(config.NumStarSystems))
 		genFunc = func() []Point {
-			return GenerateSpiralGalaxyPointsWithInterarm(config.NumStarSystems, 2, 0.5, 0.2, 2, 0.01, 0.02)
+			return GenerateSpiralGalaxyPointsWithInterarm(config.NumStarSystems, 2, 0.5, 0.2, 2, 0.01, minDistance)
 		}
 	default:
 		return nil, fmt.Errorf("unknown galaxy shape: %s", config.Shape)
@@ -59,11 +60,15 @@ func (b GalaxyBuilder) GenerateGalaxy(config GalaxyGenerationConfig) (*galaxy.Ga
 		return nil, fmt.Errorf("failed to generate galaxy shape: %w", err)
 	}
 	ids := make([]uuid.UUID, 0, config.NumStarSystems)
+
+	// Scale up the points to a reasonable size
+	scale := float64(config.NumStarSystems) * 10.0
+
 	for i := 0; i < config.NumStarSystems; i++ {
 		// Randomly select a point from the triangulation
 		location := t.Points[i]
 
-		system := b.GenerateStarSystem(location.X, location.Y)
+		system := b.GenerateStarSystem(location.X*scale, location.Y*scale)
 		g.AddStarSystem(&system)
 		ids = append(ids, system.ID)
 	}

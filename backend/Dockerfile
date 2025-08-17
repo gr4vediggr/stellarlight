@@ -17,7 +17,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /app/bin/run ./cmd/$name
 
 FROM alpine:latest
 
-WORKDIR /root/
+WORKDIR /app
 
 COPY ./assets ./assets
 COPY --from=builder /app/bin/run ./

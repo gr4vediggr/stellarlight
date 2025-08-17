@@ -46,14 +46,13 @@ func (s *StarSystem) DistanceSquared(other *StarSystem) float64 {
 }
 
 type Star struct {
-	ID   uuid.UUID `json:"id"`   // Unique identifier for the star
-	Name string    `json:"name"` // Name of the star
-	Type StarType  `json:"type"` // Type of the star (e.g., red dwarf, yellow giant)
-
-	LocationX float64  `json:"locationX"` // X coordinate in the star system
-	LocationY float64  `json:"locationY"` // Y coordinate in the star system
-	Size      float64  `json:"size"`      // Size of the star
-	Planets   []Planet `json:"planets"`   // List of planets orbiting the star
+	ID        uuid.UUID `json:"id"`        // Unique identifier for the star
+	Name      string    `json:"name"`      // Name of the star
+	Type      StarType  `json:"type"`      // Type of the star (e.g., red dwarf, yellow giant)
+	LocationX float64   `json:"locationX"` // X coordinate in the star system
+	LocationY float64   `json:"locationY"` // Y coordinate in the star system
+	Size      float64   `json:"size"`      // Size of the star
+	Planets   []Planet  `json:"planets"`   // List of planets orbiting the star
 }
 
 type Planet struct {

@@ -105,10 +105,10 @@ func (s *GameSession) AddClient(client *websocket.Client) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.clients[client.GetUserId()] = client
+	s.clients[client.GetUserID()] = client
 
 	// Update player last seen
-	if player, exists := s.players[client.GetUserId()]; exists {
+	if player, exists := s.players[client.GetUserID()]; exists {
 		player.LastSeen = time.Now()
 		player.IsActive = true
 	}
@@ -273,7 +273,7 @@ func (s *GameSession) commandToEvent(cmd *events.GameCommand) events.GameEvent {
 
 func (s *GameSession) sendGameStateToClient(client *websocket.Client) {
 	// Send current game state to client
-	state := s.getGameStateForPlayer(client.GetUserId())
+	state := s.getGameStateForPlayer(client.GetUserID())
 	client.SendMessage(&websocket.Message{
 		Type: "game_state_update",
 		Data: state,

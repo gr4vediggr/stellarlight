@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { createGameSocket } from "../services/wsClient";
-import { useUserStore } from "../state/userStore";
+import { createGameSocket } from "../../services/wsClient";
+import { useUserStore } from "../../state/userStore";
 
 export default function Play() {
   const { username } = useUserStore();

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package messages;
+option go_package = "pkg/messages";
+
+
+message FleetMoveCommand {
+  string fleet_id = 1; // ID of the fleet to move
+  string destination_system_id = 2; // ID of the destination star system
+}
+
+message QueueConstructionCommand {
+  string colony_id = 1; // ID of the colony where construction is queued
+  string building_type = 2; // Type of building to construct
+}
+
+message QueueFleetConstructionCommand{ 
+    string starbase_id = 1; // ID of the starbase where fleet construction is queued
+    string fleet_type = 2; // Type of fleet to construct
+}
+

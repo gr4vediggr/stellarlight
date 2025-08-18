@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+// import "galaxy.proto";
+import "commands.proto";
+import "gamestate.proto";
+package messages;
+option go_package = "pkg/messages";
+
+
+message GameMessage {
+    string message_id = 1; // Unique identifier for the message
+    string game_id = 2; // ID of the game this message belongs to
+    string player_id = 3; // ID of the player sending the packet
+    int64 timestamp = 4;
+    string session_token = 5; // Unique session identifier for the connection
+    
+  oneof content {
+    ChatMessage chat_message = 6; // Chat message sent by the player
+    PlayerCommand player_command = 7; // Command issued by the player
+    messages.GameStateUpdate game_state_update = 8; // Update to the game state
+    // etc
+  }
+}
+
+message ChatMessage {
+  string message = 1; // The chat message content
+  string channel = 2; // The channel or room where the message is sent
+  
+}
+
+message PlayerCommand { 
+  oneof command {
+    messages.FleetMoveCommand fleet_move_command = 1; // Command to move a fleet
+    messages.QueueConstructionCommand queue_construction_command = 2; // Command to queue a construction
+    messages.QueueFleetConstructionCommand queue_fleet_construction_command = 3; // Command to queue fleet construction
+  }
+}
+
+
+
+
+message IdMessage { uint64 id = 1; }
+

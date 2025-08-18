@@ -197,7 +197,7 @@ func (sm *SessionManager) ProcessCommand(playerID uuid.UUID, cmd *events.GameCom
 
 // ConnectClient connects a websocket client to their session
 func (sm *SessionManager) ConnectClient(client *websocket.Client) error {
-	session, err := sm.GetPlayerSession(client.GetUserId())
+	session, err := sm.GetPlayerSession(client.GetUserID())
 	if err != nil {
 		return err
 	}

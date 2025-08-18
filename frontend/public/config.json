@@ -1,0 +1,4 @@
+{
+  "apiUrl": "https://localhost:8443",
+  "wsUrl": "wss://localhost:8443"
+}

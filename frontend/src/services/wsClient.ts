@@ -1,7 +1,7 @@
-import { WS_URL } from "./config";
+import { getWsUrl } from "./config";
 
 export function createGameSocket(): WebSocket {
-  const ws = new WebSocket(WS_URL);
+  const ws = new WebSocket(getWsUrl());
   ws.binaryType = "arraybuffer"; // for protobuf frames if needed
   return ws;
 }

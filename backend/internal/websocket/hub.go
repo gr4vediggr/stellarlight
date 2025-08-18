@@ -5,9 +5,10 @@ import (
 	"log/slog"
 )
 
+// Hub manages WebSocket connections and routes them to game sessions
+// It's now simplified to focus only on connection lifecycle
 type Hub struct {
 	clients        map[*Client]bool
-	broadcast      chan []byte
 	register       chan *Client
 	unregister     chan *Client
 	done           chan struct{}
@@ -17,7 +18,6 @@ type Hub struct {
 func NewHub(sessionManager SessionManagerInterface) *Hub {
 	return &Hub{
 		clients:        make(map[*Client]bool),
-		broadcast:      make(chan []byte),
 		register:       make(chan *Client),
 		unregister:     make(chan *Client),
 		done:           make(chan struct{}),
@@ -55,16 +55,6 @@ func (h *Hub) Run() {
 				}
 
 				log.Printf("Client disconnected: %s", client.user.Email)
-			}
-
-		case message := <-h.broadcast:
-			for client := range h.clients {
-				select {
-				case client.send <- message:
-				default:
-					close(client.send)
-					delete(h.clients, client)
-				}
 			}
 		}
 	}

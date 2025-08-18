@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
-	"os"
+	"net"
+	"strconv"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
@@ -39,16 +42,12 @@ func main() {
 
 	// Initialize game session manager
 	sessionManager := session.NewSessionManager()
-
 	// Start cleanup routine for expired sessions
 	go func() {
 		ticker := time.NewTicker(time.Hour)
 		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				sessionManager.CleanupExpiredSessions()
-			}
+		for range ticker.C {
+			sessionManager.CleanupExpiredSessions()
 		}
 	}()
 
@@ -59,15 +58,7 @@ func main() {
 	// Initialize WebSocket handler
 	wsHandler := websocket.NewSessionHandler(hub, authService)
 
-	// Initialize HTTP server
-	e := echo.New()
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
-		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders: []string{"*"},
-	}))
+	e := setupHttpServer()
 
 	// Auth routes
 	setupAuthRoutes(e, authService)
@@ -78,18 +69,51 @@ func main() {
 	// WebSocket route
 	e.GET("/ws", wsHandler.HandleWebSocket)
 
-	// Static files
-	e.Static("/", "assets")
+	addr := net.JoinHostPort("", strconv.Itoa(cfg.Port))
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8443"
+	log.Printf("Starting server on %s", addr)
+	var err error
+
+	log.Printf("Using TLS with cert: %s, key: %s", cfg.TLS.CertFile, cfg.TLS.KeyFile)
+	err = app.server.StartTLS(addr, cfg.TLS.CertFile, cfg.TLS.KeyFile)
+
+	if err != nil {
+		log.Fatalf("Server failed to start: %v", err)
+
 	}
 
-	log.Printf("Server starting on port %s", port)
-	if err := e.Start(":" + port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
-	}
+}
+
+func setupHttpServer() *echo.Echo {
+	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
+
+	// Enable CORS for all origins and methods
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: app.config.AllowedOrigins,
+		AllowMethods: []string{
+			echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS,
+		},
+		AllowHeaders: []string{
+			echo.HeaderOrigin,
+			echo.HeaderContentType,
+			echo.HeaderAccept,
+			echo.HeaderAuthorization,
+		},
+		AllowCredentials: true,
+	}))
+	e.Use(middleware.RequestID())
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogStatus: true,
+		LogURI:    true,
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			requestId := c.Response().Header().Get(echo.HeaderXRequestID)
+			fmt.Printf("REQUEST: uri: %v, status: %v, request-id: %v\n", v.URI, v.Status, requestId)
+			return nil
+		},
+	}))
+
+	return e
 }
 
 // setupAuthRoutes registers HTTP routes for authentication

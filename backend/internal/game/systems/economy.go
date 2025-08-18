@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gr4vediggr/stellarlight/internal/events"
+	"github.com/gr4vediggr/stellarlight/internal/game/events"
 	"github.com/gr4vediggr/stellarlight/internal/game/types"
 )
 
@@ -58,7 +58,7 @@ func (s *EconomySystem) GetName() string {
 	return s.name
 }
 
-func (s *EconomySystem) handleGameTick(event events.Event) {
+func (s *EconomySystem) handleGameTick(event events.GameEvent) {
 	tickEvent := event.(*types.GameTickEvent)
 
 	// Generate resources every 10 ticks (1 second at 10 TPS)
@@ -67,7 +67,7 @@ func (s *EconomySystem) handleGameTick(event events.Event) {
 	}
 }
 
-func (s *EconomySystem) handleBuildShipCommand(event events.Event) {
+func (s *EconomySystem) handleBuildShipCommand(event events.GameEvent) {
 	buildEvent := event.(*types.BuildShipCommandEvent)
 
 	// Get empire
@@ -93,7 +93,7 @@ func (s *EconomySystem) handleBuildShipCommand(event events.Event) {
 			// Create ship built event
 			s.eventBus.Publish(&types.ShipBuiltEvent{
 				BaseEvent: types.BaseEvent{
-					SessionID: buildEvent.typesID,
+					SessionID: buildEvent.SessionID,
 					Type:      "ship_built",
 					Timestamp: time.Now().UnixNano(),
 				},

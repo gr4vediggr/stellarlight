@@ -6,24 +6,74 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        name: web
+        name: server
+    image: stellarlight-backend
     container_name: stellarlight-backend
     environment:
-      - PORT=8080
-      - ASSET_FOLDER=./assets
+      - PORT=8443
+      - ASSET_FOLDER=assets
+      - ALLOWED_ORIGINS=*
+      - DATABASE_URL=postgres://stellarlight:stellarlight@db:5432/stellarlight?sslmode=disable
+      - TLS_CERT_FILE=cert/localhost.crt
+      - TLS_KEY_FILE=cert/localhost.key
     ports:
-      - "8080:8080"
-    
-    
-
-
-  frontend:
-    build: ./frontend
-    container_name: stellarlight-frontend
-    ports:
-      - "5173:80"
-    environment:
-      - VITE_API_URL=http://backend:8080
-      - VITE_WS_URL=ws://backend:8080/ws
+      - "8443:8443"
+    volumes:
+      - ./cert:/app/cert:ro
     depends_on:
-      - backend
+      - db
+
+  db:
+    image: postgres:latest
+    container_name: stellarlight-db
+    environment:
+      - POSTGRES_USER=stellarlight
+      - POSTGRES_PASSWORD=stellarlight
+      - POSTGRES_DB=stellarlight
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  migrate:
+    image: migrate/migrate
+    depends_on:
+      - db
+    volumes:
+      - ./backend/sql/migrations:/migrations
+    entrypoint: [
+      "migrate",
+      "-path", "/migrations",
+      "-database", "postgres://stellarlight:stellarlight@db:5432/stellarlight?sslmode=disable",
+      "up"
+    ]
+    restart: "no"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: stellarlight-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@stellarlight.com
+      - PGADMIN_DEFAULT_PASSWORD=stellarlight
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+volumes:
+  db_data:
+
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+
+  #   image: stellarlight-frontend
+  #   container_name: stellarlight-frontend
+  #   environment:
+  #     - VITE_API_URL=https://localhost:8443
+  #   ports:
+  #     - "3000:80"
+  #   depends_on:
+  #     - backend
+  #   restart: unless-stopped

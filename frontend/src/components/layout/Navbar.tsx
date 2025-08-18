@@ -14,13 +14,16 @@ export function Navbar() {
       background: "#11161f"
     }}>
       <nav style={{
-        maxWidth: 960, margin: "0 auto",
+        width: "100%",
         padding: "0.75rem 1rem",
         display: "flex", alignItems: "center", gap: "1rem"
       }}>
         <Link to="/" style={{ fontWeight: 700, letterSpacing: 0.5 }}>Stellarlight</Link>
         <NavLink to="/" style={linkStyle}>Home</NavLink>
         <NavLink to="/play" style={linkStyle}>Play</NavLink>
+        <NavLink to="/new-game" style={linkStyle}>New Game</NavLink>
+        <NavLink to="/join-game" style={linkStyle}>Join Game</NavLink>
+
       </nav>
     </header>
   );

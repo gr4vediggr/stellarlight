@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/gr4vediggr/stellarlight/internal/game/events"
 	"github.com/gr4vediggr/stellarlight/internal/users"
 )
 
@@ -33,16 +34,9 @@ type Client struct {
 }
 
 type SessionManagerInterface interface {
-	ProcessCommand(playerID uuid.UUID, cmd *GameCommand) error
+	ProcessCommand(playerID uuid.UUID, cmd *events.GameCommand) error
 	DisconnectClient(userID uuid.UUID)
 	ConnectClient(client *Client) error
-}
-
-type GameCommand struct {
-	ID        uuid.UUID              `json:"id"`
-	Type      string                 `json:"type"`
-	Data      map[string]interface{} `json:"data"`
-	Timestamp int64                  `json:"timestamp"`
 }
 
 type Message struct {
@@ -117,8 +111,9 @@ func (c *Client) writePump() {
 func (c *Client) handleMessage(msg *Message) {
 	// Convert websocket message to game command
 	if msg.Type != "" {
-		cmd := &GameCommand{
+		cmd := &events.GameCommand{
 			ID:        uuid.New(),
+			PlayerID:  c.user.ID, // Set immediately
 			Type:      msg.Type,
 			Data:      make(map[string]interface{}),
 			Timestamp: time.Now().UnixNano(),
@@ -180,22 +175,7 @@ func (c *Client) Disconnect() {
 	c.conn.Close()
 }
 
-func (c *Client) sendMessage(msg *Message) {
-	data, err := json.Marshal(msg)
-	if err != nil {
-		log.Printf("JSON marshal error: %v", err)
-		return
-	}
-
-	select {
-	case c.send <- data:
-	default:
-		close(c.send)
-		delete(c.hub.clients, c)
-	}
-}
-
-func (c *Client) GetUserId() uuid.UUID {
+func (c *Client) GetUserID() uuid.UUID {
 	if c.user != nil {
 		return c.user.ID
 	}

@@ -1,13 +1,22 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import "./styles/globals.css";
-import Providers from "./app/providers";
-import AppRouter from "./app/router";
+// src/index.js or src/main.jsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import GameApp from './App'; // Make sure this path is correct
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <Providers>
-      <AppRouter />
-    </Providers>
-  </React.StrictMode>
-);
+async function init() { 
+  // Load runtime configuration
+  await import('./config/runtimeConfig').then(module => module.loadRuntimeConfig());
+const container = document.getElementById('root');
+if (container) {
+  const root = ReactDOM.createRoot(container);
+  root.render(
+    <React.StrictMode>
+      <GameApp />  {/* Make sure you're rendering GameApp, not App */}
+    </React.StrictMode>
+  );
+} else {
+  throw new Error("Root container not found");
+}
+}
+
+init();

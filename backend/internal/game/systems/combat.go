@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gr4vediggr/stellarlight/internal/events"
+	"github.com/gr4vediggr/stellarlight/internal/game/events"
 	"github.com/gr4vediggr/stellarlight/internal/game/types"
 )
 
@@ -55,12 +55,12 @@ func (s *CombatSystem) GetName() string {
 	return s.name
 }
 
-func (s *CombatSystem) handleGameTick(event events.Event) {
+func (s *CombatSystem) handleGameTick(event events.GameEvent) {
 	// Check for arriving fleets every tick
 	s.processFleetArrivals()
 }
 
-func (s *CombatSystem) handleFleetMoveCommand(event events.Event) {
+func (s *CombatSystem) handleFleetMoveCommand(event events.GameEvent) {
 	moveEvent := event.(*types.FleetMoveCommandEvent)
 
 	fleetIDStr, ok := moveEvent.Data["fleet_id"].(string)
@@ -85,7 +85,7 @@ func (s *CombatSystem) handleFleetMoveCommand(event events.Event) {
 
 	// Find the fleet and move it
 	if fleet := s.findFleet(fleetID, moveEvent.PlayerID); fleet != nil {
-		s.moveFleet(fleet, targetSystemID, moveEvent.typesID)
+		s.moveFleet(fleet, targetSystemID, moveEvent.SessionID)
 	}
 }
 
@@ -105,7 +105,7 @@ func (s *CombatSystem) findFleet(fleetID, playerID uuid.UUID) *types.Fleet {
 	return nil
 }
 
-func (s *CombatSystem) moveFleet(fleet *types.Fleet, targetSystemID, typesID uuid.UUID) {
+func (s *CombatSystem) moveFleet(fleet *types.Fleet, targetSystemID, SessionID uuid.UUID) {
 	// Calculate travel time (simplified)
 	travelTime := s.calculateTravelTime(fleet.Location, targetSystemID)
 	arrivalTime := time.Now().Add(travelTime).Unix()
@@ -117,7 +117,7 @@ func (s *CombatSystem) moveFleet(fleet *types.Fleet, targetSystemID, typesID uui
 	// Publish fleet moved event
 	s.eventBus.Publish(&types.FleetMovedEvent{
 		BaseEvent: types.BaseEvent{
-			SessionID: typesID,
+			SessionID: SessionID,
 			Type:      "fleet_moved",
 			Timestamp: time.Now().UnixNano(),
 		},

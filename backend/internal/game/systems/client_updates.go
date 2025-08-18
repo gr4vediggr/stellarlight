@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/gr4vediggr/stellarlight/internal/events"
+	"github.com/gr4vediggr/stellarlight/internal/game/events"
 	"github.com/gr4vediggr/stellarlight/internal/game/types"
 	"github.com/gr4vediggr/stellarlight/internal/websocket"
 )
@@ -61,7 +61,7 @@ func (s *ClientUpdateSystem) GetName() string {
 	return s.name
 }
 
-func (s *ClientUpdateSystem) handleShipBuilt(event events.Event) {
+func (s *ClientUpdateSystem) handleShipBuilt(event events.GameEvent) {
 	shipEvent := event.(*types.ShipBuiltEvent)
 
 	// Send to the player who built the ship
@@ -75,7 +75,7 @@ func (s *ClientUpdateSystem) handleShipBuilt(event events.Event) {
 	})
 }
 
-func (s *ClientUpdateSystem) handleFleetMoved(event events.Event) {
+func (s *ClientUpdateSystem) handleFleetMoved(event events.GameEvent) {
 	fleetEvent := event.(*types.FleetMovedEvent)
 
 	// Send to all players (they can filter based on visibility)
@@ -90,7 +90,7 @@ func (s *ClientUpdateSystem) handleFleetMoved(event events.Event) {
 	})
 }
 
-func (s *ClientUpdateSystem) handleGameStateUpdate(event events.Event) {
+func (s *ClientUpdateSystem) handleGameStateUpdate(event events.GameEvent) {
 	updateEvent := event.(*types.GameStateUpdateEvent)
 
 	s.broadcastToAll(&websocket.Message{
@@ -102,7 +102,7 @@ func (s *ClientUpdateSystem) handleGameStateUpdate(event events.Event) {
 	})
 }
 
-func (s *ClientUpdateSystem) handlePlayerJoined(event events.Event) {
+func (s *ClientUpdateSystem) handlePlayerJoined(event events.GameEvent) {
 	playerEvent := event.(*types.PlayerJoinedEvent)
 
 	s.broadcastToAll(&websocket.Message{
@@ -115,7 +115,7 @@ func (s *ClientUpdateSystem) handlePlayerJoined(event events.Event) {
 	})
 }
 
-func (s *ClientUpdateSystem) handleGameStarted(event events.Event) {
+func (s *ClientUpdateSystem) handleGameStarted(event events.GameEvent) {
 	gameEvent := event.(*types.GameStartedEvent)
 
 	s.broadcastToAll(&websocket.Message{

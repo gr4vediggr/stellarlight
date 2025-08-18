@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package messages;
+option go_package = "pkg/messages";
+
+message GameStateUpdate {
+  oneof update {
+    FleetUpdate fleet_update = 1; // Update related to fleet movements
+    ConstructionUpdate construction_update = 2; // Update related to construction progress
+    DiplomacyUpdate diplomacy_update = 3; // Update related to diplomatic actions
+    ResourceUpdate resource_update = 4; // Update related to resource changes
+    SystemUpdate system_update = 5; // Update related to star system changes
+    ColonyUpdate colony_update = 6; // Update related to colony status and buildings
+  }
+}
+
+message  FleetUpdate {
+  string fleet_id = 1; // ID of the fleet being updated
+  string destination_system_id = 2; // ID of the destination star system
+  double arrival_time = 3; // Estimated time of arrival at the destination
+}
+
+message ConstructionUpdate {
+  string colony_id = 1; // ID of the colony where construction is happening
+  string building_type = 2; // Type of building being constructed
+  int32 progress = 3; // Progress percentage of the construction
+}
+
+message DiplomacyUpdate {
+  string empire_id = 1; // ID of the empire involved in the diplomacy update
+  string action = 2; // Action taken (e.g., alliance, war declaration)
+  string target_empire_id = 3; // ID of the target empire for the action
+}
+
+message ResourceUpdate {
+  string empire_id = 1; // ID of the empire whose resources are being updated
+  double resource_amount = 2; // Amount of resources changed
+  string resource_type = 3; // Type of resource (e.g., metal, crystal)
+}
+
+message SystemUpdate {
+  string system_id = 1; // ID of the star system being updated
+  string owner_id = 2; // ID of the empire that owns the system
+  repeated string connected_systems = 3; // IDs of neighboring star systems
+}
+
+message ColonyUpdate {
+    string colony_id = 1; // ID of the colony being updated
+    string owner_id = 2; // ID of the empire that owns the colony
+    string status = 3; // Status of the colony (e.g., active, under attack)
+    int32 population = 4; // Population of the colony
+    repeated string buildings = 5; // List of buildings in the colony
+}

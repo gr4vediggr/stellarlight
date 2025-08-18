@@ -2,10 +2,12 @@ package websocket
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/gr4vediggr/stellarlight/internal/users"
 )
@@ -16,11 +18,31 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+var (
+	ErrChannelFull = errors.New("send channel is full")
+)
+
 type Client struct {
 	hub  *Hub
 	conn *websocket.Conn
 	send chan []byte
 	user *users.User
+
+	// Session integration
+	sessionManager SessionManagerInterface
+}
+
+type SessionManagerInterface interface {
+	ProcessCommand(playerID uuid.UUID, cmd *GameCommand) error
+	DisconnectClient(userID uuid.UUID)
+	ConnectClient(client *Client) error
+}
+
+type GameCommand struct {
+	ID        uuid.UUID              `json:"id"`
+	Type      string                 `json:"type"`
+	Data      map[string]interface{} `json:"data"`
+	Timestamp int64                  `json:"timestamp"`
 }
 
 type Message struct {
@@ -93,38 +115,69 @@ func (c *Client) writePump() {
 }
 
 func (c *Client) handleMessage(msg *Message) {
-	switch msg.Type {
-	case "create_game":
-		gameID, inviteCode := c.hub.lobbyManager.CreateGame(c.user.ID)
-		c.sendMessage(&Message{
-			Type:       "game_joined",
-			GameID:     gameID,
-			InviteCode: inviteCode,
-		})
-
-	case "join_game":
-		if err := c.hub.lobbyManager.JoinGame(msg.InviteCode, c.user.ID); err != nil {
-			c.sendMessage(&Message{
-				Type:  "error",
-				Error: err.Error(),
-			})
-			return
+	// Convert websocket message to game command
+	if msg.Type != "" {
+		cmd := &GameCommand{
+			ID:        uuid.New(),
+			Type:      msg.Type,
+			Data:      make(map[string]interface{}),
+			Timestamp: time.Now().UnixNano(),
 		}
-		c.sendMessage(&Message{
-			Type:       "game_joined",
-			GameID:     msg.InviteCode, // Simplified for demo
-			InviteCode: msg.InviteCode,
-		})
 
-	case "leave_game":
-		c.hub.lobbyManager.RemovePlayer(c.user.ID)
-		c.sendMessage(&Message{
-			Type: "game_left",
-		})
+		// Copy relevant data
+		if msg.Data != nil {
+			if dataMap, ok := msg.Data.(map[string]interface{}); ok {
+				cmd.Data = dataMap
+			}
+		}
 
-	default:
-		log.Printf("Unknown message type: %s", msg.Type)
+		// Add any additional fields
+		if msg.GameID != "" {
+			cmd.Data["game_id"] = msg.GameID
+		}
+		if msg.InviteCode != "" {
+			cmd.Data["invite_code"] = msg.InviteCode
+		}
+
+		// Forward to session manager
+		if c.sessionManager != nil {
+			if err := c.sessionManager.ProcessCommand(c.user.ID, cmd); err != nil {
+				c.sendError(err.Error())
+			}
+		}
 	}
+}
+
+func (c *Client) SendMessage(msg *Message) error {
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	select {
+	case c.send <- data:
+		return nil
+	default:
+		// Channel is full, close connection
+		close(c.send)
+		return ErrChannelFull
+	}
+}
+
+func (c *Client) sendError(errorMsg string) {
+	c.SendMessage(&Message{
+		Type:  "error",
+		Error: errorMsg,
+	})
+}
+
+func (c *Client) Disconnect() {
+	if c.sessionManager != nil {
+		c.sessionManager.DisconnectClient(c.user.ID)
+	}
+
+	c.hub.unregister <- c
+	c.conn.Close()
 }
 
 func (c *Client) sendMessage(msg *Message) {
@@ -140,4 +193,11 @@ func (c *Client) sendMessage(msg *Message) {
 		close(c.send)
 		delete(c.hub.clients, c)
 	}
+}
+
+func (c *Client) GetUserId() uuid.UUID {
+	if c.user != nil {
+		return c.user.ID
+	}
+	return uuid.Nil
 }

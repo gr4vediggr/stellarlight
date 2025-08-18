@@ -10,19 +10,19 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type Handler struct {
+type SessionHandler struct {
 	hub         *Hub
 	authService *auth.AuthService
 }
 
-func NewHandler(hub *Hub, authService *auth.AuthService) *Handler {
-	return &Handler{
+func NewSessionHandler(hub *Hub, authService *auth.AuthService) *SessionHandler {
+	return &SessionHandler{
 		hub:         hub,
 		authService: authService,
 	}
 }
 
-func (h *Handler) HandleWebSocket(c echo.Context) error {
+func (h *SessionHandler) HandleWebSocket(c echo.Context) error {
 	// Get token from query parameter
 	tokenString := c.QueryParam("token")
 	if tokenString == "" {
@@ -68,12 +68,12 @@ func (h *Handler) HandleWebSocket(c echo.Context) error {
 		user: user,
 	}
 
-	// Register client
-	client.hub.register <- client
+	// Register client with hub
+	h.hub.register <- client
 
 	// Start goroutines
 	go client.writePump()
 	go client.readPump()
 
-	return c.JSON(http.StatusOK, map[string]string{"message": "WebSocket connection established"})
+	return nil // Don't send JSON response after WebSocket upgrade
 }

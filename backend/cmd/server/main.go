@@ -2,173 +2,224 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"net"
-	"os/signal"
-	"strconv"
-	"syscall"
+	"os"
 	"time"
 
-	"github.com/go-playground/validator/v10"
-	"github.com/gr4vediggr/stellarlight/internal/auth"
-	"github.com/gr4vediggr/stellarlight/internal/config"
-	"github.com/gr4vediggr/stellarlight/internal/database"
-	"github.com/gr4vediggr/stellarlight/internal/game/lobby"
-	"github.com/gr4vediggr/stellarlight/internal/websocket"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"golang.org/x/sync/errgroup"
+
+	"github.com/gr4vediggr/stellarlight/internal/auth"
+	"github.com/gr4vediggr/stellarlight/internal/config"
+	"github.com/gr4vediggr/stellarlight/internal/database"
+	"github.com/gr4vediggr/stellarlight/internal/game/session"
+	"github.com/gr4vediggr/stellarlight/internal/users"
+	"github.com/gr4vediggr/stellarlight/internal/websocket"
 )
 
-var ()
-
-type app struct {
-	config config.Config
-
-	server *echo.Echo
-	db     *pgx.Conn
-	// Dependencies
-	authService  *auth.AuthService
-	hub          *websocket.Hub
-	lobbyManager *lobby.Manager // Assuming you have a lobby manager
-}
-
-func (a *app) initialize() error {
-	var err error
-	a.config, err = config.Load()
-	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
-	}
-
-	a.db, err = pgx.Connect(context.Background(), a.config.DatabaseURL)
-	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	userRepo := database.NewPostgresUserStore(a.db)
-	a.authService = auth.NewService(userRepo, a.config.JWTSecret)
-
-	a.lobbyManager = lobby.NewManager()
-	a.hub = websocket.NewHub(a.authService, a.lobbyManager)
-	a.server, err = a.setupHttpServer()
-	if err != nil {
-		return fmt.Errorf("failed to setup HTTP server: %w", err)
-	}
-
-	return nil
-}
-
 func main() {
-	app := &app{}
-	if err := app.initialize(); err != nil {
-		panic(err)
-	}
-
-	ctx := context.Background()
-	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
-	defer cancel()
-
-	eg, ctx := errgroup.WithContext(ctx)
-
-	eg.Go(func() error {
-		addr := net.JoinHostPort("", strconv.Itoa(app.config.Port))
-
-		log.Printf("Starting server on %s", addr)
-		var err error
-
-		log.Printf("Using TLS with cert: %s, key: %s", app.config.TLS.CertFile, app.config.TLS.KeyFile)
-		err = app.server.StartTLS(addr, app.config.TLS.CertFile, app.config.TLS.KeyFile)
-
-		if err != nil {
-			log.Printf("Server failed to start: %v", err)
-			return err
-		}
-		return nil
-	})
-
-	<-ctx.Done()
-
-	log.Println("Shutting down server...")
-
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer shutdownCancel()
-	if err := app.server.Shutdown(shutdownCtx); err != nil {
-		log.Printf("Server shutdown failed: %v", err)
-	}
-
-	err := eg.Wait()
+	// Load configuration
+	cfg, err := config.Load()
 	if err != nil {
-		log.Printf("Error during shutdown: %v", err)
-	} else {
-		log.Println("Server shutdown gracefully")
+		log.Fatalf("Failed to load config: %v", err)
 	}
 
-}
+	// Initialize database
+	db, err := pgx.Connect(context.Background(), cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close(context.Background())
 
-func (app *app) setupHttpServer() (*echo.Echo, error) {
+	// Initialize repositories and services
+	userRepo := database.NewPostgresUserStore(db)
+	authService := auth.NewService(userRepo, cfg.JWTSecret)
+
+	// Initialize game session manager
+	sessionManager := session.NewSessionManager()
+
+	// Start cleanup routine for expired sessions
+	go func() {
+		ticker := time.NewTicker(time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				sessionManager.CleanupExpiredSessions()
+			}
+		}
+	}()
+
+	// Initialize WebSocket hub with session manager
+	hub := websocket.NewHub(sessionManager)
+	go hub.Run()
+
+	// Initialize WebSocket handler
+	wsHandler := websocket.NewSessionHandler(hub, authService)
+
+	// Initialize HTTP server
 	e := echo.New()
-	e.Validator = &CustomValidator{validator: validator.New()}
-
-	// Enable CORS for all origins and methods
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: app.config.AllowedOrigins,
-		AllowMethods: []string{
-			echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS,
-		},
-		AllowHeaders: []string{
-			echo.HeaderOrigin,
-			echo.HeaderContentType,
-			echo.HeaderAccept,
-			echo.HeaderAuthorization,
-		},
-		AllowCredentials: true,
-	}))
-	e.Use(middleware.RequestID())
-	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
-		LogStatus: true,
-		LogURI:    true,
-		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			requestId := c.Response().Header().Get(echo.HeaderXRequestID)
-			fmt.Printf("REQUEST: uri: %v, status: %v, request-id: %v\n", v.URI, v.Status, requestId)
-			return nil
-		},
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders: []string{"*"},
 	}))
 
-	// Routes
-	app.setupRouter(e)
+	// Auth routes
+	setupAuthRoutes(e, authService)
 
-	return e, nil
+	// Game routes
+	registerGameRoutes(e, sessionManager, authService)
+
+	// WebSocket route
+	e.GET("/ws", wsHandler.HandleWebSocket)
+
+	// Static files
+	e.Static("/", "assets")
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8443"
+	}
+
+	log.Printf("Server starting on port %s", port)
+	if err := e.Start(":" + port); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }
 
-func (app *app) setupRouter(e *echo.Echo) {
-	h := auth.NewHandler(app.authService)
+// setupAuthRoutes registers HTTP routes for authentication
+func setupAuthRoutes(e *echo.Echo, authService *auth.AuthService) {
+	h := auth.NewHandler(authService)
 
 	apiGroup := e.Group("/api")
-
 	authGroup := apiGroup.Group("/auth")
 	{
 		authGroup.POST("/register", h.Register)
 		authGroup.POST("/login", h.Login)
 		authGroup.POST("/refresh", h.RefreshToken)
+		authGroup.POST("/logout", h.Logout)
 	}
 
-	userGroup := apiGroup.Group("/users", auth.RequireAuth(app.authService))
+	userGroup := apiGroup.Group("/users", auth.RequireAuth(authService))
 	{
 		userGroup.PUT("/update-profile", h.UpdateProfile)
 	}
-
-	handler := websocket.NewHandler(app.hub, app.authService)
-
-	// Add other routes
-	e.GET("/ws", handler.HandleWebSocket)
 }
 
-type CustomValidator struct {
-	validator *validator.Validate
+// getUserFromContext helper function to get user from context
+func getUserFromContext(c echo.Context, authService *auth.AuthService) (*users.User, error) {
+	userID, ok := c.Get("userID").(uuid.UUID)
+	if !ok {
+		return nil, echo.NewHTTPError(400, "Invalid user ID")
+	}
+
+	user, err := authService.GetUserByID(c.Request().Context(), userID)
+	if err != nil {
+		return nil, echo.NewHTTPError(400, "User not found")
+	}
+
+	return user, nil
 }
 
-func (cv *CustomValidator) Validate(i interface{}) error {
-	return cv.validator.Struct(i)
+// registerGameRoutes registers HTTP routes for game management
+func registerGameRoutes(e *echo.Echo, sessionManager *session.SessionManager, authService *auth.AuthService) {
+	gameGroup := e.Group("/api/game")
+	gameGroup.Use(auth.RequireAuth(authService))
+
+	gameGroup.POST("/create", func(c echo.Context) error {
+		user, err := getUserFromContext(c, authService)
+		if err != nil {
+			return err
+		}
+
+		session, err := sessionManager.CreateSession(user)
+		if err != nil {
+			return c.JSON(400, map[string]string{"error": err.Error()})
+		}
+
+		return c.JSON(200, map[string]interface{}{
+			"session_id":  session.ID,
+			"invite_code": session.InviteCode,
+			"state":       session.State,
+		})
+	})
+
+	gameGroup.POST("/join", func(c echo.Context) error {
+		user, err := getUserFromContext(c, authService)
+		if err != nil {
+			return err
+		}
+
+		var req struct {
+			InviteCode string `json:"invite_code"`
+		}
+		if err := c.Bind(&req); err != nil {
+			return c.JSON(400, map[string]string{"error": "Invalid request"})
+		}
+
+		session, err := sessionManager.JoinSession(user, req.InviteCode)
+		if err != nil {
+			return c.JSON(400, map[string]string{"error": err.Error()})
+		}
+
+		return c.JSON(200, map[string]interface{}{
+			"session_id":  session.ID,
+			"invite_code": session.InviteCode,
+			"state":       session.State,
+		})
+	})
+
+	gameGroup.POST("/leave", func(c echo.Context) error {
+		user, err := getUserFromContext(c, authService)
+		if err != nil {
+			return err
+		}
+
+		if err := sessionManager.LeaveSession(user.ID); err != nil {
+			return c.JSON(400, map[string]string{"error": err.Error()})
+		}
+
+		return c.JSON(200, map[string]string{"message": "Left game successfully"})
+	})
+
+	gameGroup.GET("/current", func(c echo.Context) error {
+		user, err := getUserFromContext(c, authService)
+		if err != nil {
+			return err
+		}
+
+		session, err := sessionManager.GetPlayerSession(user.ID)
+		if err != nil {
+			return c.JSON(404, map[string]string{"error": "Not in any game"})
+		}
+
+		return c.JSON(200, map[string]interface{}{
+			"session_id":  session.ID,
+			"invite_code": session.InviteCode,
+			"state":       session.State,
+		})
+	})
+
+	gameGroup.POST("/start", func(c echo.Context) error {
+		user, err := getUserFromContext(c, authService)
+		if err != nil {
+			return err
+		}
+
+		session, err := sessionManager.GetPlayerSession(user.ID)
+		if err != nil {
+			return c.JSON(404, map[string]string{"error": "Not in any game"})
+		}
+
+		if err := session.StartGame(); err != nil {
+			return c.JSON(400, map[string]string{"error": err.Error()})
+		}
+
+		return c.JSON(200, map[string]string{"message": "Game started successfully"})
+	})
 }

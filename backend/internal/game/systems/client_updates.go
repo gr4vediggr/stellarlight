@@ -1,0 +1,170 @@
+package systems
+
+import (
+	"encoding/json"
+	"log"
+	"sync"
+
+	"github.com/google/uuid"
+
+	"github.com/gr4vediggr/stellarlight/internal/events"
+	"github.com/gr4vediggr/stellarlight/internal/game/types"
+	"github.com/gr4vediggr/stellarlight/internal/websocket"
+)
+
+// ClientUpdateSystem handles sending updates to connected clients
+type ClientUpdateSystem struct {
+	name     string
+	eventBus *events.EventBus
+	clients  map[uuid.UUID]*websocket.Client
+
+	subscriptions []func()
+	mu            sync.RWMutex
+}
+
+func NewClientUpdateSystem(eventBus *events.EventBus, clients map[uuid.UUID]*websocket.Client) *ClientUpdateSystem {
+	return &ClientUpdateSystem{
+		name:          "ClientUpdateSystem",
+		eventBus:      eventBus,
+		clients:       clients,
+		subscriptions: make([]func(), 0),
+	}
+}
+
+func (s *ClientUpdateSystem) Initialize() error {
+	log.Printf("Initializing %s", s.name)
+
+	// Subscribe to all events that should be sent to clients
+	s.subscriptions = append(s.subscriptions,
+		s.eventBus.Subscribe("ship_built", s.handleShipBuilt),
+		s.eventBus.Subscribe("fleet_moved", s.handleFleetMoved),
+		s.eventBus.Subscribe("game_state_update", s.handleGameStateUpdate),
+		s.eventBus.Subscribe("player_joined", s.handlePlayerJoined),
+		s.eventBus.Subscribe("game_started", s.handleGameStarted),
+	)
+
+	return nil
+}
+
+func (s *ClientUpdateSystem) Shutdown() error {
+	log.Printf("Shutting down %s", s.name)
+
+	for _, unsubscribe := range s.subscriptions {
+		unsubscribe()
+	}
+	s.subscriptions = nil
+
+	return nil
+}
+
+func (s *ClientUpdateSystem) GetName() string {
+	return s.name
+}
+
+func (s *ClientUpdateSystem) handleShipBuilt(event events.Event) {
+	shipEvent := event.(*types.ShipBuiltEvent)
+
+	// Send to the player who built the ship
+	s.sendToPlayer(shipEvent.PlayerID, &websocket.Message{
+		Type: "ship_built",
+		Data: map[string]interface{}{
+			"ship_type": shipEvent.ShipType,
+			"ship_id":   shipEvent.ShipID,
+			"system_id": shipEvent.SystemID,
+		},
+	})
+}
+
+func (s *ClientUpdateSystem) handleFleetMoved(event events.Event) {
+	fleetEvent := event.(*types.FleetMovedEvent)
+
+	// Send to all players (they can filter based on visibility)
+	s.broadcastToAll(&websocket.Message{
+		Type: "fleet_moved",
+		Data: map[string]interface{}{
+			"fleet_id":     fleetEvent.FleetID,
+			"from_system":  fleetEvent.FromSystem,
+			"to_system":    fleetEvent.ToSystem,
+			"arrival_time": fleetEvent.ArrivalTime,
+		},
+	})
+}
+
+func (s *ClientUpdateSystem) handleGameStateUpdate(event events.Event) {
+	updateEvent := event.(*types.GameStateUpdateEvent)
+
+	s.broadcastToAll(&websocket.Message{
+		Type: "game_state_update",
+		Data: map[string]interface{}{
+			"update_type": updateEvent.UpdateType,
+			"data":        updateEvent.Data,
+		},
+	})
+}
+
+func (s *ClientUpdateSystem) handlePlayerJoined(event events.Event) {
+	playerEvent := event.(*types.PlayerJoinedEvent)
+
+	s.broadcastToAll(&websocket.Message{
+		Type: "player_joined",
+		Data: map[string]interface{}{
+			"player_id":    playerEvent.Player.User.ID,
+			"display_name": playerEvent.Player.User.DisplayName,
+			"empire_id":    playerEvent.Player.EmpireID,
+		},
+	})
+}
+
+func (s *ClientUpdateSystem) handleGameStarted(event events.Event) {
+	gameEvent := event.(*types.GameStartedEvent)
+
+	s.broadcastToAll(&websocket.Message{
+		Type: "game_started",
+		Data: map[string]interface{}{
+			"session_id": gameEvent.SessionID,
+		},
+	})
+}
+
+func (s *ClientUpdateSystem) sendToPlayer(playerID uuid.UUID, message *websocket.Message) {
+	s.mu.RLock()
+	client, exists := s.clients[playerID]
+	s.mu.RUnlock()
+
+	if exists && client != nil {
+		if err := client.SendMessage(message); err != nil {
+			log.Printf("Failed to send message to player %s: %v", playerID, err)
+		}
+	}
+}
+
+func (s *ClientUpdateSystem) broadcastToAll(message *websocket.Message) {
+	s.mu.RLock()
+	clients := make([]*websocket.Client, 0, len(s.clients))
+	for _, client := range s.clients {
+		if client != nil {
+			clients = append(clients, client)
+		}
+	}
+	s.mu.RUnlock()
+
+	// Send to all clients
+	for _, client := range clients {
+		if err := client.SendMessage(message); err != nil {
+			log.Printf("Failed to broadcast message to client: %v", err)
+		}
+	}
+}
+
+func (s *ClientUpdateSystem) sendGameStateToPlayer(playerID uuid.UUID, gameState interface{}) {
+	data, err := json.Marshal(gameState)
+	if err != nil {
+		log.Printf("Failed to marshal game state: %v", err)
+		return
+	}
+
+	s.sendToPlayer(playerID, &websocket.Message{
+		Type: "full_game_state",
+		Data: json.RawMessage(data),
+	})
+}

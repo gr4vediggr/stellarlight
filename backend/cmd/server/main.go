@@ -58,7 +58,7 @@ func main() {
 	// Initialize WebSocket handler
 	wsHandler := websocket.NewSessionHandler(hub, authService)
 
-	e := setupHttpServer()
+	e := setupHttpServer(cfg)
 
 	// Auth routes
 	setupAuthRoutes(e, authService)
@@ -72,25 +72,30 @@ func main() {
 	addr := net.JoinHostPort("", strconv.Itoa(cfg.Port))
 
 	log.Printf("Starting server on %s", addr)
-	var err error
 
 	log.Printf("Using TLS with cert: %s, key: %s", cfg.TLS.CertFile, cfg.TLS.KeyFile)
-	err = app.server.StartTLS(addr, cfg.TLS.CertFile, cfg.TLS.KeyFile)
 
-	if err != nil {
+	if err := e.StartTLS(addr, cfg.TLS.CertFile, cfg.TLS.KeyFile); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 
 	}
 
 }
 
-func setupHttpServer() *echo.Echo {
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	return cv.validator.Struct(i)
+}
+func setupHttpServer(cfg config.Config) *echo.Echo {
 	e := echo.New()
 	e.Validator = &CustomValidator{validator: validator.New()}
 
 	// Enable CORS for all origins and methods
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: app.config.AllowedOrigins,
+		AllowOrigins: cfg.AllowedOrigins,
 		AllowMethods: []string{
 			echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS,
 		},

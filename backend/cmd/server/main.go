@@ -10,9 +10,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gr4vediggr/stellarlight/internal/auth"
 	"github.com/gr4vediggr/stellarlight/internal/config"
 	"github.com/gr4vediggr/stellarlight/internal/database"
+	"github.com/gr4vediggr/stellarlight/internal/game/lobby"
+	"github.com/gr4vediggr/stellarlight/internal/websocket"
 	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -27,7 +30,9 @@ type app struct {
 	server *echo.Echo
 	db     *pgx.Conn
 	// Dependencies
-	authService *auth.AuthService
+	authService  *auth.AuthService
+	hub          *websocket.Hub
+	lobbyManager *lobby.Manager // Assuming you have a lobby manager
 }
 
 func (a *app) initialize() error {
@@ -45,6 +50,8 @@ func (a *app) initialize() error {
 	userRepo := database.NewPostgresUserStore(a.db)
 	a.authService = auth.NewService(userRepo, a.config.JWTSecret)
 
+	a.lobbyManager = lobby.NewManager()
+	a.hub = websocket.NewHub(a.authService, a.lobbyManager)
 	a.server, err = a.setupHttpServer()
 	if err != nil {
 		return fmt.Errorf("failed to setup HTTP server: %w", err)
@@ -70,12 +77,10 @@ func main() {
 
 		log.Printf("Starting server on %s", addr)
 		var err error
-		if app.config.TLS.Enabled {
-			log.Printf("Using TLS with cert: %s, key: %s", app.config.TLS.CertFile, app.config.TLS.KeyFile)
-			err = app.server.StartTLS(addr, app.config.TLS.CertFile, app.config.TLS.KeyFile)
-		} else {
-			err = app.server.Start(addr)
-		}
+
+		log.Printf("Using TLS with cert: %s, key: %s", app.config.TLS.CertFile, app.config.TLS.KeyFile)
+		err = app.server.StartTLS(addr, app.config.TLS.CertFile, app.config.TLS.KeyFile)
+
 		if err != nil {
 			log.Printf("Server failed to start: %v", err)
 			return err
@@ -104,6 +109,7 @@ func main() {
 
 func (app *app) setupHttpServer() (*echo.Echo, error) {
 	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
 
 	// Enable CORS for all origins and methods
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
@@ -153,6 +159,16 @@ func (app *app) setupRouter(e *echo.Echo) {
 		userGroup.PUT("/update-profile", h.UpdateProfile)
 	}
 
-	// Add other routes
+	handler := websocket.NewHandler(app.hub, app.authService)
 
+	// Add other routes
+	e.GET("/ws", handler.HandleWebSocket)
+}
+
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	return cv.validator.Struct(i)
 }

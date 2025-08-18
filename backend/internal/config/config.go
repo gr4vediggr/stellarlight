@@ -16,7 +16,6 @@ type Config struct {
 
 	// TLS configuration
 	TLS struct {
-		Enabled  bool
 		CertFile string
 		KeyFile  string
 	}
@@ -32,11 +31,10 @@ func Load() (Config, error) {
 		JWTSecret:   getEnvString("JWT_SECRET", "your-super-secret-key-change-in-production"),
 		Environment: getEnvString("ENVIRONMENT", "development"),
 		TLS: struct {
-			Enabled  bool
 			CertFile string
 			KeyFile  string
 		}{
-			Enabled:  getEnvString("TLS_ENABLED", "false") == "true",
+
 			CertFile: getEnvString("TLS_CERT_FILE", "server.crt"),
 			KeyFile:  getEnvString("TLS_KEY_FILE", "server.key"),
 		},
@@ -48,18 +46,16 @@ func Load() (Config, error) {
 
 	flag.Parse()
 
-	if cfg.TLS.Enabled {
-		// Validate TLS configuration
-		if cfg.TLS.CertFile == "" || cfg.TLS.KeyFile == "" {
-			return cfg, os.ErrInvalid
-		}
+	// Validate TLS configuration
+	if cfg.TLS.CertFile == "" || cfg.TLS.KeyFile == "" {
+		return cfg, os.ErrInvalid
+	}
 
-		if _, err := os.Stat(cfg.TLS.CertFile); os.IsNotExist(err) {
-			return cfg, fmt.Errorf("TLS certificate file does not exist: %w", err)
-		}
-		if _, err := os.Stat(cfg.TLS.KeyFile); os.IsNotExist(err) {
-			return cfg, fmt.Errorf("TLS key file does not exist: %w", err)
-		}
+	if _, err := os.Stat(cfg.TLS.CertFile); os.IsNotExist(err) {
+		return cfg, fmt.Errorf("TLS certificate file does not exist: %w", err)
+	}
+	if _, err := os.Stat(cfg.TLS.KeyFile); os.IsNotExist(err) {
+		return cfg, fmt.Errorf("TLS key file does not exist: %w", err)
 	}
 
 	return cfg, nil

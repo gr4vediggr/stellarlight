@@ -68,6 +68,8 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest) (*AuthRespon
 	}
 
 	if err := user.CheckPassword(req.Password); err != nil {
+		log.Infof("Login failed for user %s: %v", user.Email, err)
+		log.Infof("User: %s, Password: %s, hash: %s", user.Email, req.Password, user.Password)
 		return nil, ErrInvalidUsernameOrPassword
 	}
 
@@ -249,4 +251,12 @@ func (h *AuthService) RevokeRefreshToken(ctx context.Context, token string) erro
 	}
 
 	return nil
+}
+
+func (s *AuthService) GetUserByID(ctx context.Context, userID uuid.UUID) (*users.User, error) {
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, ErrUserNotFound
+	}
+	return user, nil
 }

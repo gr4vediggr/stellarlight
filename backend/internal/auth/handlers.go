@@ -23,6 +23,9 @@ func (h *Handler) Register(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request"})
 	}
+	if err := c.Validate(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Validation failed", "details": err.Error()})
+	}
 
 	resp, err := h.service.Register(c.Request().Context(), &req)
 	if err != nil {
@@ -50,6 +53,9 @@ func (h *Handler) Login(c echo.Context) error {
 	var req LoginRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request"})
+	}
+	if err := c.Validate(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Validation failed", "details": err.Error()})
 	}
 
 	resp, err := h.service.Login(c.Request().Context(), &req)
@@ -135,6 +141,9 @@ func (h *Handler) UpdateProfile(c echo.Context) error {
 	var req UpdateProfileRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request"})
+	}
+	if err := c.Validate(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Validation failed", "details": err.Error()})
 	}
 
 	user, err := h.service.UpdateProfile(c.Request().Context(), userID, &req)

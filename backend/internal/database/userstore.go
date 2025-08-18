@@ -28,6 +28,7 @@ func (store *PostgresUserStore) GetUserByEmail(ctx context.Context, email string
 		ID:          result.ID,
 		Email:       result.Email,
 		DisplayName: result.DisplayName,
+		Password:    result.Password,
 		CreatedAt:   result.CreatedAt.Time,
 		UpdatedAt:   result.UpdatedAt.Time,
 	}, nil
@@ -42,6 +43,7 @@ func (store *PostgresUserStore) GetUserByID(ctx context.Context, id uuid.UUID) (
 		ID:          result.ID,
 		Email:       result.Email,
 		DisplayName: result.DisplayName,
+		Password:    result.Password,
 		CreatedAt:   result.CreatedAt.Time,
 		UpdatedAt:   result.UpdatedAt.Time,
 	}, nil

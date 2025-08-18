@@ -23,20 +23,31 @@ var (
 	ErrChannelFull = errors.New("send channel is full")
 )
 
-type Client struct {
-	hub  *Hub
-	conn *websocket.Conn
-	send chan []byte
-	user *users.User
+// ClientDisconnectHandler is called when a client disconnects
+type ClientDisconnectHandler func(userID uuid.UUID)
 
-	// Session integration
-	sessionManager SessionManagerInterface
+// Client implements both GameClient and interfaces.GameClientInterface
+type Client struct {
+	conn              *websocket.Conn
+	send              chan []byte
+	user              *users.User
+	sessionManager    SessionManagerInterface
+	disconnectHandler ClientDisconnectHandler
 }
 
 type SessionManagerInterface interface {
 	ProcessCommand(playerID uuid.UUID, cmd *events.GameCommand) error
-	DisconnectClient(userID uuid.UUID)
-	ConnectClient(client *Client) error
+}
+
+// NewClient creates a new websocket client
+func NewClient(conn *websocket.Conn, user *users.User, sessionManager SessionManagerInterface, disconnectHandler ClientDisconnectHandler) *Client {
+	return &Client{
+		conn:              conn,
+		send:              make(chan []byte, 256),
+		user:              user,
+		sessionManager:    sessionManager,
+		disconnectHandler: disconnectHandler,
+	}
 }
 
 type Message struct {
@@ -49,7 +60,9 @@ type Message struct {
 
 func (c *Client) readPump() {
 	defer func() {
-		c.hub.unregister <- c
+		if c.disconnectHandler != nil {
+			c.disconnectHandler(c.user.ID)
+		}
 		c.conn.Close()
 	}()
 
@@ -143,14 +156,19 @@ func (c *Client) handleMessage(msg *Message) {
 	}
 }
 
-func (c *Client) SendMessage(msg *Message) error {
-	data, err := json.Marshal(msg)
+func (c *Client) SendMessage(messageType string, data interface{}) error {
+	msg := &Message{
+		Type: messageType,
+		Data: data,
+	}
+
+	msgData, err := json.Marshal(msg)
 	if err != nil {
 		return err
 	}
 
 	select {
-	case c.send <- data:
+	case c.send <- msgData:
 		return nil
 	default:
 		// Channel is full, close connection
@@ -160,18 +178,15 @@ func (c *Client) SendMessage(msg *Message) error {
 }
 
 func (c *Client) sendError(errorMsg string) {
-	c.SendMessage(&Message{
-		Type:  "error",
-		Error: errorMsg,
-	})
+	c.SendMessage("error", map[string]string{"error": errorMsg})
 }
 
 func (c *Client) Disconnect() {
-	if c.sessionManager != nil {
-		c.sessionManager.DisconnectClient(c.user.ID)
+	if c.disconnectHandler != nil {
+		c.disconnectHandler(c.user.ID)
 	}
 
-	c.hub.unregister <- c
+	close(c.send)
 	c.conn.Close()
 }
 

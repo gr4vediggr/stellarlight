@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gr4vediggr/stellarlight/internal/game/events"
+	"github.com/gr4vediggr/stellarlight/internal/interfaces"
 	"github.com/gr4vediggr/stellarlight/internal/users"
-	"github.com/gr4vediggr/stellarlight/internal/websocket"
 )
 
 // SessionManager manages all active game sessions
@@ -28,7 +28,7 @@ func NewSessionManager() *SessionManager {
 }
 
 // CreateSession creates a new game session
-func (sm *SessionManager) CreateSession(creator *users.User) (*GameSession, error) {
+func (sm *SessionManager) CreateSession(creator *users.User) (interfaces.GameSessionInterface, error) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
@@ -56,7 +56,7 @@ func (sm *SessionManager) CreateSession(creator *users.User) (*GameSession, erro
 }
 
 // JoinSession allows a player to join an existing session
-func (sm *SessionManager) JoinSession(player *users.User, inviteCode string) (*GameSession, error) {
+func (sm *SessionManager) JoinSession(player *users.User, inviteCode string) (interfaces.GameSessionInterface, error) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
@@ -98,7 +98,7 @@ func (sm *SessionManager) JoinSession(player *users.User, inviteCode string) (*G
 }
 
 // GetPlayerSession returns the session a player is currently in
-func (sm *SessionManager) GetPlayerSession(playerID uuid.UUID) (*GameSession, error) {
+func (sm *SessionManager) GetPlayerSession(playerID uuid.UUID) (interfaces.GameSessionInterface, error) {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
@@ -118,7 +118,7 @@ func (sm *SessionManager) GetPlayerSession(playerID uuid.UUID) (*GameSession, er
 }
 
 // GetSession returns a session by ID
-func (sm *SessionManager) GetSession(sessionID uuid.UUID) (*GameSession, error) {
+func (sm *SessionManager) GetSession(sessionID uuid.UUID) (interfaces.GameSessionInterface, error) {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
@@ -131,7 +131,7 @@ func (sm *SessionManager) GetSession(sessionID uuid.UUID) (*GameSession, error) 
 }
 
 // GetSessionByInviteCode returns a session by invite code
-func (sm *SessionManager) GetSessionByInviteCode(inviteCode string) (*GameSession, error) {
+func (sm *SessionManager) GetSessionByInviteCode(inviteCode string) (interfaces.GameSessionInterface, error) {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
@@ -195,24 +195,6 @@ func (sm *SessionManager) ProcessCommand(playerID uuid.UUID, cmd *events.GameCom
 	return nil
 }
 
-// ConnectClient connects a websocket client to their session
-func (sm *SessionManager) ConnectClient(client *websocket.Client) error {
-	session, err := sm.GetPlayerSession(client.GetUserID())
-	if err != nil {
-		return err
-	}
-
-	session.AddClient(client)
-	return nil
-}
-
-// DisconnectClient disconnects a websocket client
-func (sm *SessionManager) DisconnectClient(userID uuid.UUID) {
-	if session, err := sm.GetPlayerSession(userID); err == nil {
-		session.RemoveClient(userID)
-	}
-}
-
 // CleanupExpiredSessions removes old sessions
 func (sm *SessionManager) CleanupExpiredSessions() {
 	sm.mu.Lock()
@@ -260,11 +242,11 @@ func (sm *SessionManager) cleanupSession(sessionID uuid.UUID) {
 }
 
 // GetActiveSessions returns a list of all active sessions (for admin/monitoring)
-func (sm *SessionManager) GetActiveSessions() []*GameSession {
+func (sm *SessionManager) GetActiveSessions() []interfaces.GameSessionInterface {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
-	sessions := make([]*GameSession, 0, len(sm.sessions))
+	sessions := make([]interfaces.GameSessionInterface, 0, len(sm.sessions))
 	for _, session := range sm.sessions {
 		sessions = append(sessions, session)
 	}

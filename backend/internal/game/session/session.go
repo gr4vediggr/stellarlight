@@ -10,8 +10,8 @@ import (
 	"github.com/gr4vediggr/stellarlight/internal/game/events"
 	"github.com/gr4vediggr/stellarlight/internal/game/systems"
 	"github.com/gr4vediggr/stellarlight/internal/game/types"
+	"github.com/gr4vediggr/stellarlight/internal/interfaces"
 	"github.com/gr4vediggr/stellarlight/internal/users"
-	"github.com/gr4vediggr/stellarlight/internal/websocket"
 )
 
 // GameSessionState represents the current state of a game session
@@ -29,12 +29,10 @@ type GameSession struct {
 	ID         uuid.UUID
 	InviteCode string
 	State      GameSessionState
-	CreatedAt  time.Time
-
-	// Players and connections
-	players map[uuid.UUID]*types.Player
-	clients map[uuid.UUID]*websocket.Client
-	mu      sync.RWMutex
+	CreatedAt  time.Time // Players and connections
+	players    map[uuid.UUID]*types.Player
+	clients    map[uuid.UUID]interfaces.GameClientInterface
+	mu         sync.RWMutex
 
 	// Event system
 	eventBus *events.EventBus
@@ -59,7 +57,7 @@ func NewGameSession(creatorUser *users.User) *GameSession {
 		State:      StateWaiting,
 		CreatedAt:  time.Now(),
 		players:    make(map[uuid.UUID]*types.Player),
-		clients:    make(map[uuid.UUID]*websocket.Client),
+		clients:    make(map[uuid.UUID]interfaces.GameClientInterface),
 		eventBus:   events.NewEventBus(),
 		worldState: types.NewWorldState(),
 		ctx:        ctx,
@@ -68,8 +66,12 @@ func NewGameSession(creatorUser *users.User) *GameSession {
 
 	// Add creator as first player
 	session.AddPlayer(creatorUser)
-
 	return session
+}
+
+// GetID returns the session ID (implements interfaces.GameSessionInterface)
+func (s *GameSession) GetID() uuid.UUID {
+	return s.ID
 }
 
 // AddPlayer adds a player to the session
@@ -100,8 +102,8 @@ func (s *GameSession) AddPlayer(user *users.User) error {
 	return nil
 }
 
-// AddClient connects a websocket client to the session
-func (s *GameSession) AddClient(client *websocket.Client) {
+// AddClient connects a client to the session
+func (s *GameSession) AddClient(client interfaces.GameClientInterface) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -271,13 +273,10 @@ func (s *GameSession) commandToEvent(cmd *events.GameCommand) events.GameEvent {
 	}
 }
 
-func (s *GameSession) sendGameStateToClient(client *websocket.Client) {
+func (s *GameSession) sendGameStateToClient(client interfaces.GameClientInterface) {
 	// Send current game state to client
 	state := s.getGameStateForPlayer(client.GetUserID())
-	client.SendMessage(&websocket.Message{
-		Type: "game_state_update",
-		Data: state,
-	})
+	client.SendMessage("game_state_update", state)
 }
 
 func (s *GameSession) sendErrorToClient(playerID uuid.UUID, err error) {
@@ -286,10 +285,7 @@ func (s *GameSession) sendErrorToClient(playerID uuid.UUID, err error) {
 	s.mu.RUnlock()
 
 	if exists {
-		client.SendMessage(&websocket.Message{
-			Type:  "error",
-			Error: err.Error(),
-		})
+		client.SendMessage("error", map[string]string{"error": err.Error()})
 	}
 }
 

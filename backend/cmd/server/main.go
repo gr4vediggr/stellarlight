@@ -51,12 +51,8 @@ func main() {
 		}
 	}()
 
-	// Initialize WebSocket hub with session manager
-	hub := websocket.NewHub(sessionManager)
-	go hub.Run()
-
 	// Initialize WebSocket handler
-	wsHandler := websocket.NewSessionHandler(hub, authService)
+	wsHandler := websocket.NewSessionHandler(sessionManager, authService)
 
 	e := setupHttpServer(cfg)
 
@@ -172,9 +168,8 @@ func registerGameRoutes(e *echo.Echo, sessionManager *session.SessionManager, au
 		}
 
 		return c.JSON(200, map[string]interface{}{
-			"session_id":  session.ID,
-			"invite_code": session.InviteCode,
-			"state":       session.State,
+			"session_id":  session.GetID(),
+			"invite_code": session.GetID(),
 		})
 	})
 
@@ -197,9 +192,7 @@ func registerGameRoutes(e *echo.Echo, sessionManager *session.SessionManager, au
 		}
 
 		return c.JSON(200, map[string]interface{}{
-			"session_id":  session.ID,
-			"invite_code": session.InviteCode,
-			"state":       session.State,
+			"session_id": session.GetID(),
 		})
 	})
 
@@ -228,9 +221,7 @@ func registerGameRoutes(e *echo.Echo, sessionManager *session.SessionManager, au
 		}
 
 		return c.JSON(200, map[string]interface{}{
-			"session_id":  session.ID,
-			"invite_code": session.InviteCode,
-			"state":       session.State,
+			"session_id": session.GetID(),
 		})
 	})
 

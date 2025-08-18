@@ -6,19 +6,21 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/gr4vediggr/stellarlight/internal/auth"
+	"github.com/gr4vediggr/stellarlight/internal/interfaces"
 	"github.com/labstack/echo/v4"
 )
 
 type SessionHandler struct {
-	hub         *Hub
-	authService *auth.AuthService
+	sessionManager interfaces.SessionManagerInterface
+	authService    *auth.AuthService
 }
 
-func NewSessionHandler(hub *Hub, authService *auth.AuthService) *SessionHandler {
+func NewSessionHandler(sessionManager interfaces.SessionManagerInterface, authService *auth.AuthService) *SessionHandler {
 	return &SessionHandler{
-		hub:         hub,
-		authService: authService,
+		sessionManager: sessionManager,
+		authService:    authService,
 	}
 }
 
@@ -53,25 +55,40 @@ func (h *SessionHandler) HandleWebSocket(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "User not found"})
 	}
 
-	// Upgrade connection
+	// Try to find existing session for this player
+	gameSession, err := h.sessionManager.GetPlayerSession(user.ID)
+	if err != nil {
+		// No existing session, create a new one
+		gameSession, err = h.sessionManager.CreateSession(user)
+		if err != nil {
+			slog.Error("Failed to create session", slog.String("error", err.Error()))
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create game session"})
+		}
+		slog.Info("Created new session for player", slog.String("player", user.Email), slog.String("session_id", gameSession.GetID().String()))
+	} else {
+		slog.Info("Player rejoining existing session", slog.String("player", user.Email), slog.String("session_id", gameSession.GetID().String()))
+	} // Upgrade connection
 	conn, err := upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade error: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to upgrade connection"})
 	}
 
-	// Create client
-	client := &Client{
-		hub:  h.hub,
-		conn: conn,
-		send: make(chan []byte, 256),
-		user: user,
-	}
+	// Create client with disconnect handler that removes it from session
+	client := NewClient(conn, user, h.sessionManager, func(userID uuid.UUID) {
+		// Find and remove client from their session
+		if session, err := h.sessionManager.GetPlayerSession(userID); err == nil {
+			session.RemoveClient(userID)
+			log.Printf("Client disconnected from session: %s (session: %s)", user.Email, session.GetID().String())
+		}
+	})
 
-	// Register client with hub
-	h.hub.register <- client
+	// Add client directly to the session
+	gameSession.AddClient(client)
 
-	// Start goroutines
+	log.Printf("Client connected directly to session: %s (session: %s)", user.Email, gameSession.GetID().String())
+
+	// Start client goroutines
 	go client.writePump()
 	go client.readPump()
 

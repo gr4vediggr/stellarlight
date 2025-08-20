@@ -11,24 +11,24 @@ option go_package = "pkg/messages";
 
 // Main message wrapper from server
 message ServerMessage {
-    string message_id = 1;    // Optional response ID
+    string messageId = 1;    // Optional response ID
     int64 timestamp = 2;
     
     oneof message {
         // Lobby Messages
-        LobbyMessage lobby_message = 10;
+        LobbyMessage lobbyMessage = 10;
         
         // Game Messages
-        GameMessage game_message = 20;
+        GameMessage gameMessage = 20;
         
         // Chat Messages
-        ChatMessage chat_message = 30;
+        ChatMessage chatMessage = 30;
         
         // System Messages
-        SystemMessage system_message = 40;
+        SystemMessage systemMessage = 40;
         
         // Error Messages
-        ErrorMessage error_message = 50;
+        ErrorMessage errorMessage = 50;
     }
 }
 
@@ -50,9 +50,9 @@ message LobbyMessage {
 
 // Complete lobby state - sent when player joins or significant changes occur
 message LobbyStateMessage {
-    string session_id = 1;
-    string invite_code = 2;
-    string host_player_id = 3;
+    string sessionId = 1;
+    string inviteCode = 2;
+    string hostPlayerId = 3;
     LobbyStatus status = 4;
     repeated LobbyPlayer players = 5;
     GalaxyGenerateSettings settings = 6;
@@ -65,13 +65,13 @@ message LobbyStateMessage {
 }
 
 message LobbyPlayer {
-    string player_id = 1;
-    string display_name = 2;
+    string playerId = 1;
+    string displayName = 2;
     string color = 3;
-    bool is_ready = 4;
-    bool is_host = 5;
-    bool is_connected = 6;
-    int64 joined_at = 7;
+    bool isReady = 4;
+    bool isHost = 5;
+    bool isConnected = 6;
+    int64 joinedAt = 7;
 }
 
 // Individual update messages for efficiency
@@ -80,8 +80,8 @@ message PlayerJoinedMessage {
 }
 
 message PlayerLeftMessage {
-    string player_id = 1;
-    string display_name = 2;
+    string playerId = 1;
+    string displayName = 2;
 }
 
 message PlayerUpdatedMessage {
@@ -90,17 +90,17 @@ message PlayerUpdatedMessage {
 
 message LobbySettingsUpdatedMessage {
     GalaxyGenerateSettings settings = 1;
-    string updated_by_player_id = 2;
+    string updatedByPlayerId = 2;
 }
 
 message GameStartingMessage {
-    GalaxyGenerateSettings final_settings = 1;
-    int64 start_time = 2;
+    GalaxyGenerateSettings finalSettings = 1;
+    int64 startTime = 2;
 }
 
 message GameLoadingMessage {
     float progress = 1;         // 0.0 to 1.0
-    string status_text = 2;     // "Generating galaxy...", "Creating empires...", etc.
+    string statusText = 2;     // "Generating galaxy...", "Creating empires...", etc.
     string phase = 3;           // "GALAXY_GENERATION", "EMPIRE_SETUP", etc.
 }
 
@@ -118,21 +118,21 @@ message GameMessage {
 
 message GameStateMessage {
     // Full or partial game state
-    string state_data = 1;      // JSON or binary game state
-    int64 turn_number = 2;
-    int64 game_time = 3;
+    string stateData = 1;      // JSON or binary game state
+    int64 turnNumber = 2;
+    int64 gameTime = 3;
 }
 
 message GameEventMessage {
-    string event_type = 1;      // "FLEET_ARRIVED", "BATTLE_OCCURRED", etc.
-    string event_data = 2;      // JSON event data
-    repeated string affected_players = 3;
+    string eventType = 1;      // "FLEET_ARRIVED", "BATTLE_OCCURRED", etc.
+    string eventData = 2;      // JSON event data
+    repeated string affectedPlayers = 3;
 }
 
 message TurnUpdateMessage {
-    int64 turn_number = 1;
-    int64 turn_deadline = 2;
-    bool is_paused = 3;
+    int64 turnNumber = 1;
+    int64 turnDeadline = 2;
+    bool isPaused = 3;
 }
 
 // =============================================================================
@@ -140,8 +140,8 @@ message TurnUpdateMessage {
 // =============================================================================
 
 message ChatMessage {
-    string sender_id = 1;
-    string sender_display_name = 2;
+    string senderId = 1;
+    string senderDisplayName = 2;
     int64 timestamp = 3;
     
     oneof scope {
@@ -157,7 +157,7 @@ message GlobalChatMessage {
 }
 
 message PrivateChatMessage {
-    string recipient_id = 1;
+    string recipientId = 1;
     string message = 2;
 }
 
@@ -167,7 +167,7 @@ message LobbyChatMessage {
 
 message SystemChatMessage {
     string message = 1;
-    string message_type = 2;    // "INFO", "WARNING", "ERROR"
+    string messageType = 2;    // "INFO", "WARNING", "ERROR"
 }
 
 // =============================================================================
@@ -193,9 +193,9 @@ message AuthMessage {
 }
 
 message ServerStatusMessage {
-    bool is_maintenance = 1;
+    bool isMaintenance = 1;
     string version = 2;
-    int32 player_count = 3;
+    int32 playerCount = 3;
 }
 
 // =============================================================================
@@ -203,8 +203,8 @@ message ServerStatusMessage {
 // =============================================================================
 
 message ErrorMessage {
-    string error_code = 1;      // "LOBBY_FULL", "INVALID_COMMAND", etc.
-    string error_message = 2;
+    string errorCode = 1;      // "LOBBY_FULL", "INVALID_COMMAND", etc.
+    string errorMessage = 2;
     string context = 3;         // Additional context for debugging
     repeated string details = 4; // Detailed error information
 }

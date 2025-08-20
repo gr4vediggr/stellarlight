@@ -1,20 +1,20 @@
 import { ProtobufWebSocketService } from '../messaging/ProtobufWebSocketService';
 import { ApiService } from '../api/api_service';
-import { LobbyMessage, GameMessage } from '../../proto/server_messages';
+import { LobbyMessage, GameMessage, LobbyStateMessage, LobbyPlayer } from '../../proto/server_messages';
 import { GalaxyGenerateSettings } from '../../proto/client_commands';
 
 export interface GameSession {
-  session_id: string;
-  invite_code: string;
+  sessionId: string;
+  inviteCode: string;
   state: 'waiting' | 'active' | 'paused' | 'ended';
 }
 
 export interface Player {
-  user_id: string;
-  display_name: string;
+  userId: string;
+  displayName: string;
   color?: string;
-  ready: boolean;
-  is_host: boolean;
+  isReady: boolean;
+  isHost: boolean;
 }
 
 export interface LobbyState {
@@ -129,20 +129,21 @@ export class GameService {
     };
   }
 
-  private updateLocalLobbyState(lobbyState: any) {
+  private updateLocalLobbyState(lobbyState: LobbyStateMessage) {
     // Convert the protobuf lobby state to our local format
+    console.log(lobbyState);
     this.currentLobbyState = {
       session: {
-        session_id: lobbyState.sessionId,
-        invite_code: lobbyState.inviteCode,
+        sessionId: lobbyState.sessionId,
+        inviteCode: lobbyState.inviteCode,
         state: this.mapLobbyStatus(lobbyState.status)
       },
-      players: lobbyState.players?.map((p: any) => ({
-        user_id: p.playerId,
-        display_name: p.displayName,
+      players: lobbyState.players?.map((p: LobbyPlayer) => ({
+        userId: p.playerId,
+        displayName: p.displayName,
         color: p.color,
-        ready: p.isReady,
-        is_host: p.isHost
+        isReady: p.isReady,
+        isHost: p.isHost
       })) || [],
       settings: lobbyState.settings ? {
         numStars: lobbyState.settings.numStars,

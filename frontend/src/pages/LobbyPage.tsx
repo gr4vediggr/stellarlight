@@ -3,6 +3,7 @@ import { useGame } from '../core/game/GameContext';
 import { useAuth } from '../core/auth/AuthContext';
 import { Settings, Users, Play, UserCheck, UserX, Palette, Copy, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import type { Player } from '../core/game/GameService';
 
 const PLAYER_COLORS = [
   '#3b82f6', // blue
@@ -74,7 +75,7 @@ export const LobbyPage = () => {
             Establishing connection to your game lobby...
           </p>
           <p className="text-sm text-blue-300 mb-6">
-            Session ID: {currentSession.session_id}
+            Session ID: {currentSession.sessionId}
           </p>
           <button
             onClick={() => navigate('/dashboard')}
@@ -98,16 +99,17 @@ export const LobbyPage = () => {
     return null;
   }
 
-  const currentPlayer = lobbyState.players.find((p: any) => p.playerId === user?.id);
+  const currentPlayer = lobbyState.players.find((p: Player) => p.userId === user?.id);
   const isHost = currentPlayer?.isHost || false;
-  const canStartGame = isHost && lobbyState.players.every((p: any) => p.isReady) && lobbyState.players.length > 0;
-
+  const canStartGame = isHost && lobbyState.players.every((p: Player) => p.isReady) && lobbyState.players.length > 0;
+  console.log(lobbyState.players, user?.id)
   const handleLeaveGame = async () => {
     await leaveGame();
     navigate('/dashboard');
   };
 
   const handleToggleReady = () => {
+    console.log(currentPlayer, "cp")
     if (currentPlayer) {
       setReady(!currentPlayer.isReady);
     }
@@ -124,13 +126,13 @@ export const LobbyPage = () => {
 
   const copyInviteCode = async () => {
     try {
-      await navigator.clipboard.writeText(currentSession.invite_code);
+      await navigator.clipboard.writeText(currentSession.inviteCode);
       // Could show a toast notification here
     } catch (error) {
       console.error('Failed to copy invite code:', error);
     }
   };
-
+  console.log(currentSession);
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 p-4">
       <div className="max-w-6xl mx-auto">
@@ -170,7 +172,7 @@ export const LobbyPage = () => {
             </div>
             <div className="flex items-center gap-3">
               <code className="text-xl font-mono bg-black/30 px-4 py-2 rounded text-white">
-                {currentSession.invite_code}
+                {currentSession.inviteCode}
               </code>
               <button
                 onClick={copyInviteCode}
@@ -193,9 +195,9 @@ export const LobbyPage = () => {
             </div>
             
             <div className="space-y-3">
-              {lobbyState.players.map((player: any) => (
+              {lobbyState.players.map((player: Player) => (
                 <div
-                  key={player.playerId}
+                  key={player.userId}
                   className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
                 >
                   <div className="flex items-center gap-3">
@@ -237,12 +239,12 @@ export const LobbyPage = () => {
               <button
                 onClick={handleToggleReady}
                 className={`w-full px-6 py-3 rounded-lg font-medium transition duration-200 ${
-                  currentPlayer?.ready
+                  currentPlayer?.isReady
                     ? 'bg-red-600 hover:bg-red-700 text-white'
                     : 'bg-green-600 hover:bg-green-700 text-white'
                 }`}
               >
-                {currentPlayer?.ready ? 'Cancel Ready' : 'Ready Up'}
+                {currentPlayer?.isReady ? 'Cancel Ready' : 'Ready Up'}
               </button>
             </div>
 

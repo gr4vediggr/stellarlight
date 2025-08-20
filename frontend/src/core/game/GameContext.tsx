@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { GameService } from './GameService';
-import type { GameSession, GameEventType } from './GameService';
+import type { GameSession, GameEventType, LobbyState } from './GameService';
 import { getRuntimeConfig } from '../../config/runtimeConfig';
 import { useAuth } from '../auth/AuthContext';
 
 interface GameContextType {
   gameService: GameService;
   currentSession: GameSession | null;
-  lobbyState: any | null; // Using GameService's state format
+  lobbyState: LobbyState | null; // Using GameService's state format
   isConnected: boolean;
   loading: boolean;
   error: string | null;

@@ -9,7 +9,7 @@ option go_package = "pkg/messages";
 
 // Main command wrapper from client
 message ClientCommand {
-    string player_id = 1;
+    string playerId = 1;
     int64 timestamp = 2;
     
     oneof command {
@@ -32,17 +32,17 @@ message ClientCommand {
 
 message LobbyCommand {
     oneof action {
-        JoinLobbyCommand join_lobby = 1;
-        LeaveLobbyCommand leave_lobby = 2;
-        SetReadyCommand set_ready = 3;
-        SetColorCommand set_color = 4;
-        UpdateSettingsCommand update_settings = 5;
-        StartGameCommand start_game = 6;
+        JoinLobbyCommand joinLobby = 1;
+        LeaveLobbyCommand leaveLobby = 2;
+        SetReadyCommand setReady = 3;
+        SetColorCommand setColor = 4;
+        UpdateSettingsCommand updateSettings = 5;
+        StartGameCommand startGame = 6;
     }
 }
 
 message JoinLobbyCommand {
-    string invite_code = 1;
+    string inviteCode = 1;
 }
 
 message LeaveLobbyCommand {
@@ -79,19 +79,19 @@ message GameCommand {
 }
 
 message MoveFleetCommand {
-    uint64 fleet_id = 1;
-    uint64 destination_star_id = 2;
+    uint64 fleetId = 1;
+    uint64 destinationStarId = 2;
 }
 
 message QueueConstructionCommand {
-    uint64 colony_id = 1;
-    string building_type = 2;
+    uint64 colonyId = 1;
+    string buildingType = 2;
     uint32 quantity = 3;
 }
 
 message QueueFleetConstructionCommand {
-    uint64 colony_id = 1;
-    string ship_type = 2;
+    uint64 colonyId = 1;
+    string shipType = 2;
     uint32 quantity = 3;
 }
 
@@ -112,7 +112,7 @@ message GlobalChatCommand {
 }
 
 message PrivateChatCommand {
-    string recipient_id = 1;
+    string recipientId = 1;
     string message = 2;
 }
 

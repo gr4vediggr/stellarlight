@@ -200,10 +200,10 @@ export const Dashboard = () => {
                   You have an active game session
                 </h3>
                 <p className="text-yellow-100">
-                  Session: <span className="font-mono">{currentSession.session_id?.substring(0, 8)}...</span>
-                  {currentSession.invite_code && (
+                  Session: <span className="font-mono">{currentSession.sessionId?.substring(0, 8)}...</span>
+                  {currentSession.inviteCode && (
                     <span className="ml-4">
-                      Invite Code: <span className="font-mono font-bold">{currentSession.invite_code}</span>
+                      Invite Code: <span className="font-mono font-bold">{currentSession.inviteCode}</span>
                     </span>
                   )}
                 </p>

@@ -73,7 +73,7 @@ func (LobbyStateMessage_LobbyStatus) EnumDescriptor() ([]byte, []int) {
 // Main message wrapper from server
 type ServerMessage struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
-	MessageId string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"` // Optional response ID
+	MessageId string                 `protobuf:"bytes,1,opt,name=messageId,proto3" json:"messageId,omitempty"` // Optional response ID
 	Timestamp int64                  `protobuf:"varint,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	// Types that are valid to be assigned to Message:
 	//
@@ -189,27 +189,27 @@ type isServerMessage_Message interface {
 
 type ServerMessage_LobbyMessage struct {
 	// Lobby Messages
-	LobbyMessage *LobbyMessage `protobuf:"bytes,10,opt,name=lobby_message,json=lobbyMessage,proto3,oneof"`
+	LobbyMessage *LobbyMessage `protobuf:"bytes,10,opt,name=lobbyMessage,proto3,oneof"`
 }
 
 type ServerMessage_GameMessage struct {
 	// Game Messages
-	GameMessage *GameMessage `protobuf:"bytes,20,opt,name=game_message,json=gameMessage,proto3,oneof"`
+	GameMessage *GameMessage `protobuf:"bytes,20,opt,name=gameMessage,proto3,oneof"`
 }
 
 type ServerMessage_ChatMessage struct {
 	// Chat Messages
-	ChatMessage *ChatMessage `protobuf:"bytes,30,opt,name=chat_message,json=chatMessage,proto3,oneof"`
+	ChatMessage *ChatMessage `protobuf:"bytes,30,opt,name=chatMessage,proto3,oneof"`
 }
 
 type ServerMessage_SystemMessage struct {
 	// System Messages
-	SystemMessage *SystemMessage `protobuf:"bytes,40,opt,name=system_message,json=systemMessage,proto3,oneof"`
+	SystemMessage *SystemMessage `protobuf:"bytes,40,opt,name=systemMessage,proto3,oneof"`
 }
 
 type ServerMessage_ErrorMessage struct {
 	// Error Messages
-	ErrorMessage *ErrorMessage `protobuf:"bytes,50,opt,name=error_message,json=errorMessage,proto3,oneof"`
+	ErrorMessage *ErrorMessage `protobuf:"bytes,50,opt,name=errorMessage,proto3,oneof"`
 }
 
 func (*ServerMessage_LobbyMessage) isServerMessage_Message() {}
@@ -387,9 +387,9 @@ func (*LobbyMessage_GameLoading) isLobbyMessage_Content() {}
 // Complete lobby state - sent when player joins or significant changes occur
 type LobbyStateMessage struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
-	SessionId     string                        `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	InviteCode    string                        `protobuf:"bytes,2,opt,name=invite_code,json=inviteCode,proto3" json:"invite_code,omitempty"`
-	HostPlayerId  string                        `protobuf:"bytes,3,opt,name=host_player_id,json=hostPlayerId,proto3" json:"host_player_id,omitempty"`
+	SessionId     string                        `protobuf:"bytes,1,opt,name=sessionId,proto3" json:"sessionId,omitempty"`
+	InviteCode    string                        `protobuf:"bytes,2,opt,name=inviteCode,proto3" json:"inviteCode,omitempty"`
+	HostPlayerId  string                        `protobuf:"bytes,3,opt,name=hostPlayerId,proto3" json:"hostPlayerId,omitempty"`
 	Status        LobbyStateMessage_LobbyStatus `protobuf:"varint,4,opt,name=status,proto3,enum=messages.LobbyStateMessage_LobbyStatus" json:"status,omitempty"`
 	Players       []*LobbyPlayer                `protobuf:"bytes,5,rep,name=players,proto3" json:"players,omitempty"`
 	Settings      *GalaxyGenerateSettings       `protobuf:"bytes,6,opt,name=settings,proto3" json:"settings,omitempty"`
@@ -471,13 +471,13 @@ func (x *LobbyStateMessage) GetSettings() *GalaxyGenerateSettings {
 
 type LobbyPlayer struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PlayerId      string                 `protobuf:"bytes,1,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	PlayerId      string                 `protobuf:"bytes,1,opt,name=playerId,proto3" json:"playerId,omitempty"`
+	DisplayName   string                 `protobuf:"bytes,2,opt,name=displayName,proto3" json:"displayName,omitempty"`
 	Color         string                 `protobuf:"bytes,3,opt,name=color,proto3" json:"color,omitempty"`
-	IsReady       bool                   `protobuf:"varint,4,opt,name=is_ready,json=isReady,proto3" json:"is_ready,omitempty"`
-	IsHost        bool                   `protobuf:"varint,5,opt,name=is_host,json=isHost,proto3" json:"is_host,omitempty"`
-	IsConnected   bool                   `protobuf:"varint,6,opt,name=is_connected,json=isConnected,proto3" json:"is_connected,omitempty"`
-	JoinedAt      int64                  `protobuf:"varint,7,opt,name=joined_at,json=joinedAt,proto3" json:"joined_at,omitempty"`
+	IsReady       bool                   `protobuf:"varint,4,opt,name=isReady,proto3" json:"isReady,omitempty"`
+	IsHost        bool                   `protobuf:"varint,5,opt,name=isHost,proto3" json:"isHost,omitempty"`
+	IsConnected   bool                   `protobuf:"varint,6,opt,name=isConnected,proto3" json:"isConnected,omitempty"`
+	JoinedAt      int64                  `protobuf:"varint,7,opt,name=joinedAt,proto3" json:"joinedAt,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -608,8 +608,8 @@ func (x *PlayerJoinedMessage) GetPlayer() *LobbyPlayer {
 
 type PlayerLeftMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PlayerId      string                 `protobuf:"bytes,1,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	PlayerId      string                 `protobuf:"bytes,1,opt,name=playerId,proto3" json:"playerId,omitempty"`
+	DisplayName   string                 `protobuf:"bytes,2,opt,name=displayName,proto3" json:"displayName,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -705,7 +705,7 @@ func (x *PlayerUpdatedMessage) GetPlayer() *LobbyPlayer {
 type LobbySettingsUpdatedMessage struct {
 	state             protoimpl.MessageState  `protogen:"open.v1"`
 	Settings          *GalaxyGenerateSettings `protobuf:"bytes,1,opt,name=settings,proto3" json:"settings,omitempty"`
-	UpdatedByPlayerId string                  `protobuf:"bytes,2,opt,name=updated_by_player_id,json=updatedByPlayerId,proto3" json:"updated_by_player_id,omitempty"`
+	UpdatedByPlayerId string                  `protobuf:"bytes,2,opt,name=updatedByPlayerId,proto3" json:"updatedByPlayerId,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -756,8 +756,8 @@ func (x *LobbySettingsUpdatedMessage) GetUpdatedByPlayerId() string {
 
 type GameStartingMessage struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
-	FinalSettings *GalaxyGenerateSettings `protobuf:"bytes,1,opt,name=final_settings,json=finalSettings,proto3" json:"final_settings,omitempty"`
-	StartTime     int64                   `protobuf:"varint,2,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	FinalSettings *GalaxyGenerateSettings `protobuf:"bytes,1,opt,name=finalSettings,proto3" json:"finalSettings,omitempty"`
+	StartTime     int64                   `protobuf:"varint,2,opt,name=startTime,proto3" json:"startTime,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -808,9 +808,9 @@ func (x *GameStartingMessage) GetStartTime() int64 {
 
 type GameLoadingMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Progress      float32                `protobuf:"fixed32,1,opt,name=progress,proto3" json:"progress,omitempty"`                     // 0.0 to 1.0
-	StatusText    string                 `protobuf:"bytes,2,opt,name=status_text,json=statusText,proto3" json:"status_text,omitempty"` // "Generating galaxy...", "Creating empires...", etc.
-	Phase         string                 `protobuf:"bytes,3,opt,name=phase,proto3" json:"phase,omitempty"`                             // "GALAXY_GENERATION", "EMPIRE_SETUP", etc.
+	Progress      float32                `protobuf:"fixed32,1,opt,name=progress,proto3" json:"progress,omitempty"`   // 0.0 to 1.0
+	StatusText    string                 `protobuf:"bytes,2,opt,name=statusText,proto3" json:"statusText,omitempty"` // "Generating galaxy...", "Creating empires...", etc.
+	Phase         string                 `protobuf:"bytes,3,opt,name=phase,proto3" json:"phase,omitempty"`           // "GALAXY_GENERATION", "EMPIRE_SETUP", etc.
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -967,9 +967,9 @@ func (*GameMessage_TurnUpdate) isGameMessage_Content() {}
 type GameStateMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Full or partial game state
-	StateData     string `protobuf:"bytes,1,opt,name=state_data,json=stateData,proto3" json:"state_data,omitempty"` // JSON or binary game state
-	TurnNumber    int64  `protobuf:"varint,2,opt,name=turn_number,json=turnNumber,proto3" json:"turn_number,omitempty"`
-	GameTime      int64  `protobuf:"varint,3,opt,name=game_time,json=gameTime,proto3" json:"game_time,omitempty"`
+	StateData     string `protobuf:"bytes,1,opt,name=stateData,proto3" json:"stateData,omitempty"` // JSON or binary game state
+	TurnNumber    int64  `protobuf:"varint,2,opt,name=turnNumber,proto3" json:"turnNumber,omitempty"`
+	GameTime      int64  `protobuf:"varint,3,opt,name=gameTime,proto3" json:"gameTime,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1027,9 +1027,9 @@ func (x *GameStateMessage) GetGameTime() int64 {
 
 type GameEventMessage struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	EventType       string                 `protobuf:"bytes,1,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty"` // "FLEET_ARRIVED", "BATTLE_OCCURRED", etc.
-	EventData       string                 `protobuf:"bytes,2,opt,name=event_data,json=eventData,proto3" json:"event_data,omitempty"` // JSON event data
-	AffectedPlayers []string               `protobuf:"bytes,3,rep,name=affected_players,json=affectedPlayers,proto3" json:"affected_players,omitempty"`
+	EventType       string                 `protobuf:"bytes,1,opt,name=eventType,proto3" json:"eventType,omitempty"` // "FLEET_ARRIVED", "BATTLE_OCCURRED", etc.
+	EventData       string                 `protobuf:"bytes,2,opt,name=eventData,proto3" json:"eventData,omitempty"` // JSON event data
+	AffectedPlayers []string               `protobuf:"bytes,3,rep,name=affectedPlayers,proto3" json:"affectedPlayers,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1087,9 +1087,9 @@ func (x *GameEventMessage) GetAffectedPlayers() []string {
 
 type TurnUpdateMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	TurnNumber    int64                  `protobuf:"varint,1,opt,name=turn_number,json=turnNumber,proto3" json:"turn_number,omitempty"`
-	TurnDeadline  int64                  `protobuf:"varint,2,opt,name=turn_deadline,json=turnDeadline,proto3" json:"turn_deadline,omitempty"`
-	IsPaused      bool                   `protobuf:"varint,3,opt,name=is_paused,json=isPaused,proto3" json:"is_paused,omitempty"`
+	TurnNumber    int64                  `protobuf:"varint,1,opt,name=turnNumber,proto3" json:"turnNumber,omitempty"`
+	TurnDeadline  int64                  `protobuf:"varint,2,opt,name=turnDeadline,proto3" json:"turnDeadline,omitempty"`
+	IsPaused      bool                   `protobuf:"varint,3,opt,name=isPaused,proto3" json:"isPaused,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1147,8 +1147,8 @@ func (x *TurnUpdateMessage) GetIsPaused() bool {
 
 type ChatMessage struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	SenderId          string                 `protobuf:"bytes,1,opt,name=sender_id,json=senderId,proto3" json:"sender_id,omitempty"`
-	SenderDisplayName string                 `protobuf:"bytes,2,opt,name=sender_display_name,json=senderDisplayName,proto3" json:"sender_display_name,omitempty"`
+	SenderId          string                 `protobuf:"bytes,1,opt,name=senderId,proto3" json:"senderId,omitempty"`
+	SenderDisplayName string                 `protobuf:"bytes,2,opt,name=senderDisplayName,proto3" json:"senderDisplayName,omitempty"`
 	Timestamp         int64                  `protobuf:"varint,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	// Types that are valid to be assigned to Scope:
 	//
@@ -1329,7 +1329,7 @@ func (x *GlobalChatMessage) GetMessage() string {
 
 type PrivateChatMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RecipientId   string                 `protobuf:"bytes,1,opt,name=recipient_id,json=recipientId,proto3" json:"recipient_id,omitempty"`
+	RecipientId   string                 `protobuf:"bytes,1,opt,name=recipientId,proto3" json:"recipientId,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1426,7 +1426,7 @@ func (x *LobbyChatMessage) GetMessage() string {
 type SystemChatMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
-	MessageType   string                 `protobuf:"bytes,2,opt,name=message_type,json=messageType,proto3" json:"message_type,omitempty"` // "INFO", "WARNING", "ERROR"
+	MessageType   string                 `protobuf:"bytes,2,opt,name=messageType,proto3" json:"messageType,omitempty"` // "INFO", "WARNING", "ERROR"
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1679,9 +1679,9 @@ func (x *AuthMessage) GetMessage() string {
 
 type ServerStatusMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	IsMaintenance bool                   `protobuf:"varint,1,opt,name=is_maintenance,json=isMaintenance,proto3" json:"is_maintenance,omitempty"`
+	IsMaintenance bool                   `protobuf:"varint,1,opt,name=isMaintenance,proto3" json:"isMaintenance,omitempty"`
 	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-	PlayerCount   int32                  `protobuf:"varint,3,opt,name=player_count,json=playerCount,proto3" json:"player_count,omitempty"`
+	PlayerCount   int32                  `protobuf:"varint,3,opt,name=playerCount,proto3" json:"playerCount,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1739,8 +1739,8 @@ func (x *ServerStatusMessage) GetPlayerCount() int32 {
 
 type ErrorMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ErrorCode     string                 `protobuf:"bytes,1,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"` // "LOBBY_FULL", "INVALID_COMMAND", etc.
-	ErrorMessage  string                 `protobuf:"bytes,2,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	ErrorCode     string                 `protobuf:"bytes,1,opt,name=errorCode,proto3" json:"errorCode,omitempty"` // "LOBBY_FULL", "INVALID_COMMAND", etc.
+	ErrorMessage  string                 `protobuf:"bytes,2,opt,name=errorMessage,proto3" json:"errorMessage,omitempty"`
 	Context       string                 `protobuf:"bytes,3,opt,name=context,proto3" json:"context,omitempty"` // Additional context for debugging
 	Details       []string               `protobuf:"bytes,4,rep,name=details,proto3" json:"details,omitempty"` // Detailed error information
 	unknownFields protoimpl.UnknownFields
@@ -1809,17 +1809,16 @@ var File_server_messages_proto protoreflect.FileDescriptor
 
 const file_server_messages_proto_rawDesc = "" +
 	"\n" +
-	"\x15server_messages.proto\x12\bmessages\x1a\x15client_commands.proto\"\x8f\x03\n" +
-	"\rServerMessage\x12\x1d\n" +
-	"\n" +
-	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x1c\n" +
-	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\x12=\n" +
-	"\rlobby_message\x18\n" +
-	" \x01(\v2\x16.messages.LobbyMessageH\x00R\flobbyMessage\x12:\n" +
-	"\fgame_message\x18\x14 \x01(\v2\x15.messages.GameMessageH\x00R\vgameMessage\x12:\n" +
-	"\fchat_message\x18\x1e \x01(\v2\x15.messages.ChatMessageH\x00R\vchatMessage\x12@\n" +
-	"\x0esystem_message\x18( \x01(\v2\x17.messages.SystemMessageH\x00R\rsystemMessage\x12=\n" +
-	"\rerror_message\x182 \x01(\v2\x16.messages.ErrorMessageH\x00R\ferrorMessageB\t\n" +
+	"\x15server_messages.proto\x12\bmessages\x1a\x15client_commands.proto\"\x89\x03\n" +
+	"\rServerMessage\x12\x1c\n" +
+	"\tmessageId\x18\x01 \x01(\tR\tmessageId\x12\x1c\n" +
+	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\x12<\n" +
+	"\flobbyMessage\x18\n" +
+	" \x01(\v2\x16.messages.LobbyMessageH\x00R\flobbyMessage\x129\n" +
+	"\vgameMessage\x18\x14 \x01(\v2\x15.messages.GameMessageH\x00R\vgameMessage\x129\n" +
+	"\vchatMessage\x18\x1e \x01(\v2\x15.messages.ChatMessageH\x00R\vchatMessage\x12?\n" +
+	"\rsystemMessage\x18( \x01(\v2\x17.messages.SystemMessageH\x00R\rsystemMessage\x12<\n" +
+	"\ferrorMessage\x182 \x01(\v2\x16.messages.ErrorMessageH\x00R\ferrorMessageB\t\n" +
 	"\amessage\"\x85\x04\n" +
 	"\fLobbyMessage\x12>\n" +
 	"\vlobby_state\x18\x01 \x01(\v2\x1b.messages.LobbyStateMessageH\x00R\n" +
@@ -1831,45 +1830,45 @@ const file_server_messages_proto_rawDesc = "" +
 	"\x10settings_updated\x18\x05 \x01(\v2%.messages.LobbySettingsUpdatedMessageH\x00R\x0fsettingsUpdated\x12D\n" +
 	"\rgame_starting\x18\x06 \x01(\v2\x1d.messages.GameStartingMessageH\x00R\fgameStarting\x12A\n" +
 	"\fgame_loading\x18\a \x01(\v2\x1c.messages.GameLoadingMessageH\x00R\vgameLoadingB\t\n" +
-	"\acontent\"\xe0\x02\n" +
-	"\x11LobbyStateMessage\x12\x1d\n" +
+	"\acontent\"\xdc\x02\n" +
+	"\x11LobbyStateMessage\x12\x1c\n" +
+	"\tsessionId\x18\x01 \x01(\tR\tsessionId\x12\x1e\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1f\n" +
-	"\vinvite_code\x18\x02 \x01(\tR\n" +
-	"inviteCode\x12$\n" +
-	"\x0ehost_player_id\x18\x03 \x01(\tR\fhostPlayerId\x12?\n" +
+	"inviteCode\x18\x02 \x01(\tR\n" +
+	"inviteCode\x12\"\n" +
+	"\fhostPlayerId\x18\x03 \x01(\tR\fhostPlayerId\x12?\n" +
 	"\x06status\x18\x04 \x01(\x0e2'.messages.LobbyStateMessage.LobbyStatusR\x06status\x12/\n" +
 	"\aplayers\x18\x05 \x03(\v2\x15.messages.LobbyPlayerR\aplayers\x12<\n" +
 	"\bsettings\x18\x06 \x01(\v2 .messages.GalaxyGenerateSettingsR\bsettings\"5\n" +
 	"\vLobbyStatus\x12\v\n" +
 	"\aWAITING\x10\x00\x12\f\n" +
 	"\bSTARTING\x10\x01\x12\v\n" +
-	"\aIN_GAME\x10\x02\"\xd7\x01\n" +
-	"\vLobbyPlayer\x12\x1b\n" +
-	"\tplayer_id\x18\x01 \x01(\tR\bplayerId\x12!\n" +
-	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
-	"\x05color\x18\x03 \x01(\tR\x05color\x12\x19\n" +
-	"\bis_ready\x18\x04 \x01(\bR\aisReady\x12\x17\n" +
-	"\ais_host\x18\x05 \x01(\bR\x06isHost\x12!\n" +
-	"\fis_connected\x18\x06 \x01(\bR\visConnected\x12\x1b\n" +
-	"\tjoined_at\x18\a \x01(\x03R\bjoinedAt\"D\n" +
+	"\aIN_GAME\x10\x02\"\xd1\x01\n" +
+	"\vLobbyPlayer\x12\x1a\n" +
+	"\bplayerId\x18\x01 \x01(\tR\bplayerId\x12 \n" +
+	"\vdisplayName\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
+	"\x05color\x18\x03 \x01(\tR\x05color\x12\x18\n" +
+	"\aisReady\x18\x04 \x01(\bR\aisReady\x12\x16\n" +
+	"\x06isHost\x18\x05 \x01(\bR\x06isHost\x12 \n" +
+	"\visConnected\x18\x06 \x01(\bR\visConnected\x12\x1a\n" +
+	"\bjoinedAt\x18\a \x01(\x03R\bjoinedAt\"D\n" +
 	"\x13PlayerJoinedMessage\x12-\n" +
-	"\x06player\x18\x01 \x01(\v2\x15.messages.LobbyPlayerR\x06player\"S\n" +
-	"\x11PlayerLeftMessage\x12\x1b\n" +
-	"\tplayer_id\x18\x01 \x01(\tR\bplayerId\x12!\n" +
-	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\"E\n" +
+	"\x06player\x18\x01 \x01(\v2\x15.messages.LobbyPlayerR\x06player\"Q\n" +
+	"\x11PlayerLeftMessage\x12\x1a\n" +
+	"\bplayerId\x18\x01 \x01(\tR\bplayerId\x12 \n" +
+	"\vdisplayName\x18\x02 \x01(\tR\vdisplayName\"E\n" +
 	"\x14PlayerUpdatedMessage\x12-\n" +
-	"\x06player\x18\x01 \x01(\v2\x15.messages.LobbyPlayerR\x06player\"\x8c\x01\n" +
+	"\x06player\x18\x01 \x01(\v2\x15.messages.LobbyPlayerR\x06player\"\x89\x01\n" +
 	"\x1bLobbySettingsUpdatedMessage\x12<\n" +
-	"\bsettings\x18\x01 \x01(\v2 .messages.GalaxyGenerateSettingsR\bsettings\x12/\n" +
-	"\x14updated_by_player_id\x18\x02 \x01(\tR\x11updatedByPlayerId\"}\n" +
-	"\x13GameStartingMessage\x12G\n" +
-	"\x0efinal_settings\x18\x01 \x01(\v2 .messages.GalaxyGenerateSettingsR\rfinalSettings\x12\x1d\n" +
-	"\n" +
-	"start_time\x18\x02 \x01(\x03R\tstartTime\"g\n" +
+	"\bsettings\x18\x01 \x01(\v2 .messages.GalaxyGenerateSettingsR\bsettings\x12,\n" +
+	"\x11updatedByPlayerId\x18\x02 \x01(\tR\x11updatedByPlayerId\"{\n" +
+	"\x13GameStartingMessage\x12F\n" +
+	"\rfinalSettings\x18\x01 \x01(\v2 .messages.GalaxyGenerateSettingsR\rfinalSettings\x12\x1c\n" +
+	"\tstartTime\x18\x02 \x01(\x03R\tstartTime\"f\n" +
 	"\x12GameLoadingMessage\x12\x1a\n" +
-	"\bprogress\x18\x01 \x01(\x02R\bprogress\x12\x1f\n" +
-	"\vstatus_text\x18\x02 \x01(\tR\n" +
+	"\bprogress\x18\x01 \x01(\x02R\bprogress\x12\x1e\n" +
+	"\n" +
+	"statusText\x18\x02 \x01(\tR\n" +
 	"statusText\x12\x14\n" +
 	"\x05phase\x18\x03 \x01(\tR\x05phase\"\xd2\x01\n" +
 	"\vGameMessage\x12;\n" +
@@ -1879,27 +1878,26 @@ const file_server_messages_proto_rawDesc = "" +
 	"game_event\x18\x02 \x01(\v2\x1a.messages.GameEventMessageH\x00R\tgameEvent\x12>\n" +
 	"\vturn_update\x18\x03 \x01(\v2\x1b.messages.TurnUpdateMessageH\x00R\n" +
 	"turnUpdateB\t\n" +
-	"\acontent\"o\n" +
-	"\x10GameStateMessage\x12\x1d\n" +
+	"\acontent\"l\n" +
+	"\x10GameStateMessage\x12\x1c\n" +
+	"\tstateData\x18\x01 \x01(\tR\tstateData\x12\x1e\n" +
 	"\n" +
-	"state_data\x18\x01 \x01(\tR\tstateData\x12\x1f\n" +
-	"\vturn_number\x18\x02 \x01(\x03R\n" +
-	"turnNumber\x12\x1b\n" +
-	"\tgame_time\x18\x03 \x01(\x03R\bgameTime\"{\n" +
-	"\x10GameEventMessage\x12\x1d\n" +
+	"turnNumber\x18\x02 \x01(\x03R\n" +
+	"turnNumber\x12\x1a\n" +
+	"\bgameTime\x18\x03 \x01(\x03R\bgameTime\"x\n" +
+	"\x10GameEventMessage\x12\x1c\n" +
+	"\teventType\x18\x01 \x01(\tR\teventType\x12\x1c\n" +
+	"\teventData\x18\x02 \x01(\tR\teventData\x12(\n" +
+	"\x0faffectedPlayers\x18\x03 \x03(\tR\x0faffectedPlayers\"s\n" +
+	"\x11TurnUpdateMessage\x12\x1e\n" +
 	"\n" +
-	"event_type\x18\x01 \x01(\tR\teventType\x12\x1d\n" +
-	"\n" +
-	"event_data\x18\x02 \x01(\tR\teventData\x12)\n" +
-	"\x10affected_players\x18\x03 \x03(\tR\x0faffectedPlayers\"v\n" +
-	"\x11TurnUpdateMessage\x12\x1f\n" +
-	"\vturn_number\x18\x01 \x01(\x03R\n" +
-	"turnNumber\x12#\n" +
-	"\rturn_deadline\x18\x02 \x01(\x03R\fturnDeadline\x12\x1b\n" +
-	"\tis_paused\x18\x03 \x01(\bR\bisPaused\"\xdd\x02\n" +
-	"\vChatMessage\x12\x1b\n" +
-	"\tsender_id\x18\x01 \x01(\tR\bsenderId\x12.\n" +
-	"\x13sender_display_name\x18\x02 \x01(\tR\x11senderDisplayName\x12\x1c\n" +
+	"turnNumber\x18\x01 \x01(\x03R\n" +
+	"turnNumber\x12\"\n" +
+	"\fturnDeadline\x18\x02 \x01(\x03R\fturnDeadline\x12\x1a\n" +
+	"\bisPaused\x18\x03 \x01(\bR\bisPaused\"\xda\x02\n" +
+	"\vChatMessage\x12\x1a\n" +
+	"\bsenderId\x18\x01 \x01(\tR\bsenderId\x12,\n" +
+	"\x11senderDisplayName\x18\x02 \x01(\tR\x11senderDisplayName\x12\x1c\n" +
 	"\ttimestamp\x18\x03 \x01(\x03R\ttimestamp\x125\n" +
 	"\x06global\x18\n" +
 	" \x01(\v2\x1b.messages.GlobalChatMessageH\x00R\x06global\x128\n" +
@@ -1908,15 +1906,15 @@ const file_server_messages_proto_rawDesc = "" +
 	"\x06system\x18\r \x01(\v2\x1b.messages.SystemChatMessageH\x00R\x06systemB\a\n" +
 	"\x05scope\"-\n" +
 	"\x11GlobalChatMessage\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"Q\n" +
-	"\x12PrivateChatMessage\x12!\n" +
-	"\frecipient_id\x18\x01 \x01(\tR\vrecipientId\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"P\n" +
+	"\x12PrivateChatMessage\x12 \n" +
+	"\vrecipientId\x18\x01 \x01(\tR\vrecipientId\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\",\n" +
 	"\x10LobbyChatMessage\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"P\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"O\n" +
 	"\x11SystemChatMessage\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\x12!\n" +
-	"\fmessage_type\x18\x02 \x01(\tR\vmessageType\"\xcc\x01\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\x12 \n" +
+	"\vmessageType\x18\x02 \x01(\tR\vmessageType\"\xcc\x01\n" +
 	"\rSystemMessage\x12=\n" +
 	"\n" +
 	"connection\x18\x01 \x01(\v2\x1b.messages.ConnectionMessageH\x00R\n" +
@@ -1929,15 +1927,14 @@ const file_server_messages_proto_rawDesc = "" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\"?\n" +
 	"\vAuthMessage\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"y\n" +
-	"\x13ServerStatusMessage\x12%\n" +
-	"\x0eis_maintenance\x18\x01 \x01(\bR\risMaintenance\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\tR\aversion\x12!\n" +
-	"\fplayer_count\x18\x03 \x01(\x05R\vplayerCount\"\x86\x01\n" +
-	"\fErrorMessage\x12\x1d\n" +
-	"\n" +
-	"error_code\x18\x01 \x01(\tR\terrorCode\x12#\n" +
-	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"w\n" +
+	"\x13ServerStatusMessage\x12$\n" +
+	"\risMaintenance\x18\x01 \x01(\bR\risMaintenance\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\x12 \n" +
+	"\vplayerCount\x18\x03 \x01(\x05R\vplayerCount\"\x84\x01\n" +
+	"\fErrorMessage\x12\x1c\n" +
+	"\terrorCode\x18\x01 \x01(\tR\terrorCode\x12\"\n" +
+	"\ferrorMessage\x18\x02 \x01(\tR\ferrorMessage\x12\x18\n" +
 	"\acontext\x18\x03 \x01(\tR\acontext\x12\x18\n" +
 	"\adetails\x18\x04 \x03(\tR\adetailsB\x0eZ\fpkg/messagesb\x06proto3"
 
@@ -1984,11 +1981,11 @@ var file_server_messages_proto_goTypes = []any{
 	(*GalaxyGenerateSettings)(nil),      // 25: messages.GalaxyGenerateSettings
 }
 var file_server_messages_proto_depIdxs = []int32{
-	2,  // 0: messages.ServerMessage.lobby_message:type_name -> messages.LobbyMessage
-	11, // 1: messages.ServerMessage.game_message:type_name -> messages.GameMessage
-	15, // 2: messages.ServerMessage.chat_message:type_name -> messages.ChatMessage
-	20, // 3: messages.ServerMessage.system_message:type_name -> messages.SystemMessage
-	24, // 4: messages.ServerMessage.error_message:type_name -> messages.ErrorMessage
+	2,  // 0: messages.ServerMessage.lobbyMessage:type_name -> messages.LobbyMessage
+	11, // 1: messages.ServerMessage.gameMessage:type_name -> messages.GameMessage
+	15, // 2: messages.ServerMessage.chatMessage:type_name -> messages.ChatMessage
+	20, // 3: messages.ServerMessage.systemMessage:type_name -> messages.SystemMessage
+	24, // 4: messages.ServerMessage.errorMessage:type_name -> messages.ErrorMessage
 	3,  // 5: messages.LobbyMessage.lobby_state:type_name -> messages.LobbyStateMessage
 	5,  // 6: messages.LobbyMessage.player_joined:type_name -> messages.PlayerJoinedMessage
 	6,  // 7: messages.LobbyMessage.player_left:type_name -> messages.PlayerLeftMessage
@@ -2002,7 +1999,7 @@ var file_server_messages_proto_depIdxs = []int32{
 	4,  // 15: messages.PlayerJoinedMessage.player:type_name -> messages.LobbyPlayer
 	4,  // 16: messages.PlayerUpdatedMessage.player:type_name -> messages.LobbyPlayer
 	25, // 17: messages.LobbySettingsUpdatedMessage.settings:type_name -> messages.GalaxyGenerateSettings
-	25, // 18: messages.GameStartingMessage.final_settings:type_name -> messages.GalaxyGenerateSettings
+	25, // 18: messages.GameStartingMessage.finalSettings:type_name -> messages.GalaxyGenerateSettings
 	12, // 19: messages.GameMessage.game_state:type_name -> messages.GameStateMessage
 	13, // 20: messages.GameMessage.game_event:type_name -> messages.GameEventMessage
 	14, // 21: messages.GameMessage.turn_update:type_name -> messages.TurnUpdateMessage

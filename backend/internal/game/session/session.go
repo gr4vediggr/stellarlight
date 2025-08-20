@@ -96,8 +96,8 @@ func (s *GameSession) AddPlayer(user *users.User) error {
 
 // AddClient connects a client to the session
 func (s *GameSession) AddClient(client interfaces.GameClientInterface) {
+	log.Println("adding client")
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	s.clients[client.GetUserID()] = client
 
@@ -106,6 +106,7 @@ func (s *GameSession) AddClient(client interfaces.GameClientInterface) {
 		player.LastSeen = time.Now()
 		player.IsActive = true
 	}
+	s.mu.Unlock()
 
 	// Send lobby state to client
 	s.broadcastLobbyState()
@@ -114,7 +115,6 @@ func (s *GameSession) AddClient(client interfaces.GameClientInterface) {
 // RemoveClient disconnects a websocket client
 func (s *GameSession) RemoveClient(userID uuid.UUID) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	delete(s.clients, userID)
 
@@ -122,6 +122,8 @@ func (s *GameSession) RemoveClient(userID uuid.UUID) {
 		player.IsActive = false
 		player.LastSeen = time.Now()
 	}
+	s.mu.Unlock()
+	s.broadcastLobbyState()
 }
 
 // ProcessCommand handles a command from a client
@@ -194,13 +196,23 @@ func (s *GameSession) handleLobbyCommand(playerID uuid.UUID, lobbyCmd *messages.
 }
 
 func (s *GameSession) handlePlayerReady(playerID uuid.UUID, data *messages.SetReadyCommand) {
-	// Update player ready state (implementation needed)
-	// For now, just broadcast updated lobby state
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ready := data.Ready
+	player := s.players[playerID]
+	player.Ready = ready
+
 }
 
 func (s *GameSession) handlePlayerColor(playerID uuid.UUID, data *messages.SetColorCommand) {
-	// Update player color (implementation needed)
-	// For now, just broadcast updated lobby state
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	color := data.Color
+	player := s.players[playerID]
+	player.Color = color
+
 }
 
 func (s *GameSession) handleSettingsUpdate(playerID uuid.UUID, data *messages.UpdateSettingsCommand) {
@@ -247,8 +259,8 @@ func (s *GameSession) createLobbyStateMessage() *messages.LobbyMessage {
 			PlayerId:    playerID.String(),
 			DisplayName: player.User.DisplayName,
 			IsHost:      s.HostID == playerID,
-			IsReady:     false, // TODO: Implement ready state tracking
-			Color:       "",    // TODO: Implement color tracking
+			IsReady:     player.Ready,
+			Color:       player.Color,
 		}
 		lobbyPlayers = append(lobbyPlayers, lobbyPlayer)
 	}

@@ -24,7 +24,7 @@ const (
 // Main command wrapper from client
 type ClientCommand struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
-	PlayerId  string                 `protobuf:"bytes,1,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
+	PlayerId  string                 `protobuf:"bytes,1,opt,name=playerId,proto3" json:"playerId,omitempty"`
 	Timestamp int64                  `protobuf:"varint,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	// Types that are valid to be assigned to Command:
 	//
@@ -266,27 +266,27 @@ type isLobbyCommand_Action interface {
 }
 
 type LobbyCommand_JoinLobby struct {
-	JoinLobby *JoinLobbyCommand `protobuf:"bytes,1,opt,name=join_lobby,json=joinLobby,proto3,oneof"`
+	JoinLobby *JoinLobbyCommand `protobuf:"bytes,1,opt,name=joinLobby,proto3,oneof"`
 }
 
 type LobbyCommand_LeaveLobby struct {
-	LeaveLobby *LeaveLobbyCommand `protobuf:"bytes,2,opt,name=leave_lobby,json=leaveLobby,proto3,oneof"`
+	LeaveLobby *LeaveLobbyCommand `protobuf:"bytes,2,opt,name=leaveLobby,proto3,oneof"`
 }
 
 type LobbyCommand_SetReady struct {
-	SetReady *SetReadyCommand `protobuf:"bytes,3,opt,name=set_ready,json=setReady,proto3,oneof"`
+	SetReady *SetReadyCommand `protobuf:"bytes,3,opt,name=setReady,proto3,oneof"`
 }
 
 type LobbyCommand_SetColor struct {
-	SetColor *SetColorCommand `protobuf:"bytes,4,opt,name=set_color,json=setColor,proto3,oneof"`
+	SetColor *SetColorCommand `protobuf:"bytes,4,opt,name=setColor,proto3,oneof"`
 }
 
 type LobbyCommand_UpdateSettings struct {
-	UpdateSettings *UpdateSettingsCommand `protobuf:"bytes,5,opt,name=update_settings,json=updateSettings,proto3,oneof"`
+	UpdateSettings *UpdateSettingsCommand `protobuf:"bytes,5,opt,name=updateSettings,proto3,oneof"`
 }
 
 type LobbyCommand_StartGame struct {
-	StartGame *StartGameCommand `protobuf:"bytes,6,opt,name=start_game,json=startGame,proto3,oneof"`
+	StartGame *StartGameCommand `protobuf:"bytes,6,opt,name=startGame,proto3,oneof"`
 }
 
 func (*LobbyCommand_JoinLobby) isLobbyCommand_Action() {}
@@ -303,7 +303,7 @@ func (*LobbyCommand_StartGame) isLobbyCommand_Action() {}
 
 type JoinLobbyCommand struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	InviteCode    string                 `protobuf:"bytes,1,opt,name=invite_code,json=inviteCode,proto3" json:"invite_code,omitempty"`
+	InviteCode    string                 `protobuf:"bytes,1,opt,name=inviteCode,proto3" json:"inviteCode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -649,8 +649,8 @@ func (*GameCommand_QueueFleetConstruction) isGameCommand_Action() {}
 
 type MoveFleetCommand struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	FleetId           uint64                 `protobuf:"varint,1,opt,name=fleet_id,json=fleetId,proto3" json:"fleet_id,omitempty"`
-	DestinationStarId uint64                 `protobuf:"varint,2,opt,name=destination_star_id,json=destinationStarId,proto3" json:"destination_star_id,omitempty"`
+	FleetId           uint64                 `protobuf:"varint,1,opt,name=fleetId,proto3" json:"fleetId,omitempty"`
+	DestinationStarId uint64                 `protobuf:"varint,2,opt,name=destinationStarId,proto3" json:"destinationStarId,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -701,8 +701,8 @@ func (x *MoveFleetCommand) GetDestinationStarId() uint64 {
 
 type QueueConstructionCommand struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ColonyId      uint64                 `protobuf:"varint,1,opt,name=colony_id,json=colonyId,proto3" json:"colony_id,omitempty"`
-	BuildingType  string                 `protobuf:"bytes,2,opt,name=building_type,json=buildingType,proto3" json:"building_type,omitempty"`
+	ColonyId      uint64                 `protobuf:"varint,1,opt,name=colonyId,proto3" json:"colonyId,omitempty"`
+	BuildingType  string                 `protobuf:"bytes,2,opt,name=buildingType,proto3" json:"buildingType,omitempty"`
 	Quantity      uint32                 `protobuf:"varint,3,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -761,8 +761,8 @@ func (x *QueueConstructionCommand) GetQuantity() uint32 {
 
 type QueueFleetConstructionCommand struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ColonyId      uint64                 `protobuf:"varint,1,opt,name=colony_id,json=colonyId,proto3" json:"colony_id,omitempty"`
-	ShipType      string                 `protobuf:"bytes,2,opt,name=ship_type,json=shipType,proto3" json:"ship_type,omitempty"`
+	ColonyId      uint64                 `protobuf:"varint,1,opt,name=colonyId,proto3" json:"colonyId,omitempty"`
+	ShipType      string                 `protobuf:"bytes,2,opt,name=shipType,proto3" json:"shipType,omitempty"`
 	Quantity      uint32                 `protobuf:"varint,3,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -963,7 +963,7 @@ func (x *GlobalChatCommand) GetMessage() string {
 
 type PrivateChatCommand struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RecipientId   string                 `protobuf:"bytes,1,opt,name=recipient_id,json=recipientId,proto3" json:"recipient_id,omitempty"`
+	RecipientId   string                 `protobuf:"bytes,1,opt,name=recipientId,proto3" json:"recipientId,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1165,29 +1165,29 @@ var File_client_commands_proto protoreflect.FileDescriptor
 
 const file_client_commands_proto_rawDesc = "" +
 	"\n" +
-	"\x15client_commands.proto\x12\bmessages\"\xc8\x02\n" +
-	"\rClientCommand\x12\x1b\n" +
-	"\tplayer_id\x18\x01 \x01(\tR\bplayerId\x12\x1c\n" +
+	"\x15client_commands.proto\x12\bmessages\"\xc7\x02\n" +
+	"\rClientCommand\x12\x1a\n" +
+	"\bplayerId\x18\x01 \x01(\tR\bplayerId\x12\x1c\n" +
 	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\x12=\n" +
 	"\rlobby_command\x18\n" +
 	" \x01(\v2\x16.messages.LobbyCommandH\x00R\flobbyCommand\x12:\n" +
 	"\fgame_command\x18\x14 \x01(\v2\x15.messages.GameCommandH\x00R\vgameCommand\x12:\n" +
 	"\fchat_command\x18\x1e \x01(\v2\x15.messages.ChatCommandH\x00R\vchatCommand\x12:\n" +
 	"\fping_command\x18( \x01(\v2\x15.messages.PingCommandH\x00R\vpingCommandB\t\n" +
-	"\acommand\"\x92\x03\n" +
-	"\fLobbyCommand\x12;\n" +
+	"\acommand\"\x8c\x03\n" +
+	"\fLobbyCommand\x12:\n" +
+	"\tjoinLobby\x18\x01 \x01(\v2\x1a.messages.JoinLobbyCommandH\x00R\tjoinLobby\x12=\n" +
 	"\n" +
-	"join_lobby\x18\x01 \x01(\v2\x1a.messages.JoinLobbyCommandH\x00R\tjoinLobby\x12>\n" +
-	"\vleave_lobby\x18\x02 \x01(\v2\x1b.messages.LeaveLobbyCommandH\x00R\n" +
-	"leaveLobby\x128\n" +
-	"\tset_ready\x18\x03 \x01(\v2\x19.messages.SetReadyCommandH\x00R\bsetReady\x128\n" +
-	"\tset_color\x18\x04 \x01(\v2\x19.messages.SetColorCommandH\x00R\bsetColor\x12J\n" +
-	"\x0fupdate_settings\x18\x05 \x01(\v2\x1f.messages.UpdateSettingsCommandH\x00R\x0eupdateSettings\x12;\n" +
+	"leaveLobby\x18\x02 \x01(\v2\x1b.messages.LeaveLobbyCommandH\x00R\n" +
+	"leaveLobby\x127\n" +
+	"\bsetReady\x18\x03 \x01(\v2\x19.messages.SetReadyCommandH\x00R\bsetReady\x127\n" +
+	"\bsetColor\x18\x04 \x01(\v2\x19.messages.SetColorCommandH\x00R\bsetColor\x12I\n" +
+	"\x0eupdateSettings\x18\x05 \x01(\v2\x1f.messages.UpdateSettingsCommandH\x00R\x0eupdateSettings\x12:\n" +
+	"\tstartGame\x18\x06 \x01(\v2\x1a.messages.StartGameCommandH\x00R\tstartGameB\b\n" +
+	"\x06action\"2\n" +
+	"\x10JoinLobbyCommand\x12\x1e\n" +
 	"\n" +
-	"start_game\x18\x06 \x01(\v2\x1a.messages.StartGameCommandH\x00R\tstartGameB\b\n" +
-	"\x06action\"3\n" +
-	"\x10JoinLobbyCommand\x12\x1f\n" +
-	"\vinvite_code\x18\x01 \x01(\tR\n" +
+	"inviteCode\x18\x01 \x01(\tR\n" +
 	"inviteCode\"\x13\n" +
 	"\x11LeaveLobbyCommand\"'\n" +
 	"\x0fSetReadyCommand\x12\x14\n" +
@@ -1202,17 +1202,17 @@ const file_client_commands_proto_rawDesc = "" +
 	"move_fleet\x18\x01 \x01(\v2\x1a.messages.MoveFleetCommandH\x00R\tmoveFleet\x12S\n" +
 	"\x12queue_construction\x18\x02 \x01(\v2\".messages.QueueConstructionCommandH\x00R\x11queueConstruction\x12c\n" +
 	"\x18queue_fleet_construction\x18\x03 \x01(\v2'.messages.QueueFleetConstructionCommandH\x00R\x16queueFleetConstructionB\b\n" +
-	"\x06action\"]\n" +
-	"\x10MoveFleetCommand\x12\x19\n" +
-	"\bfleet_id\x18\x01 \x01(\x04R\afleetId\x12.\n" +
-	"\x13destination_star_id\x18\x02 \x01(\x04R\x11destinationStarId\"x\n" +
-	"\x18QueueConstructionCommand\x12\x1b\n" +
-	"\tcolony_id\x18\x01 \x01(\x04R\bcolonyId\x12#\n" +
-	"\rbuilding_type\x18\x02 \x01(\tR\fbuildingType\x12\x1a\n" +
-	"\bquantity\x18\x03 \x01(\rR\bquantity\"u\n" +
-	"\x1dQueueFleetConstructionCommand\x12\x1b\n" +
-	"\tcolony_id\x18\x01 \x01(\x04R\bcolonyId\x12\x1b\n" +
-	"\tship_type\x18\x02 \x01(\tR\bshipType\x12\x1a\n" +
+	"\x06action\"Z\n" +
+	"\x10MoveFleetCommand\x12\x18\n" +
+	"\afleetId\x18\x01 \x01(\x04R\afleetId\x12,\n" +
+	"\x11destinationStarId\x18\x02 \x01(\x04R\x11destinationStarId\"v\n" +
+	"\x18QueueConstructionCommand\x12\x1a\n" +
+	"\bcolonyId\x18\x01 \x01(\x04R\bcolonyId\x12\"\n" +
+	"\fbuildingType\x18\x02 \x01(\tR\fbuildingType\x12\x1a\n" +
+	"\bquantity\x18\x03 \x01(\rR\bquantity\"s\n" +
+	"\x1dQueueFleetConstructionCommand\x12\x1a\n" +
+	"\bcolonyId\x18\x01 \x01(\x04R\bcolonyId\x12\x1a\n" +
+	"\bshipType\x18\x02 \x01(\tR\bshipType\x12\x1a\n" +
 	"\bquantity\x18\x03 \x01(\rR\bquantity\"\xbb\x01\n" +
 	"\vChatCommand\x125\n" +
 	"\x06global\x18\x01 \x01(\v2\x1b.messages.GlobalChatCommandH\x00R\x06global\x128\n" +
@@ -1220,9 +1220,9 @@ const file_client_commands_proto_rawDesc = "" +
 	"\x05lobby\x18\x03 \x01(\v2\x1a.messages.LobbyChatCommandH\x00R\x05lobbyB\a\n" +
 	"\x05scope\"-\n" +
 	"\x11GlobalChatCommand\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"Q\n" +
-	"\x12PrivateChatCommand\x12!\n" +
-	"\frecipient_id\x18\x01 \x01(\tR\vrecipientId\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"P\n" +
+	"\x12PrivateChatCommand\x12 \n" +
+	"\vrecipientId\x18\x01 \x01(\tR\vrecipientId\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\",\n" +
 	"\x10LobbyChatCommand\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"\xa6\x01\n" +
@@ -1271,12 +1271,12 @@ var file_client_commands_proto_depIdxs = []int32{
 	8,  // 1: messages.ClientCommand.game_command:type_name -> messages.GameCommand
 	12, // 2: messages.ClientCommand.chat_command:type_name -> messages.ChatCommand
 	17, // 3: messages.ClientCommand.ping_command:type_name -> messages.PingCommand
-	2,  // 4: messages.LobbyCommand.join_lobby:type_name -> messages.JoinLobbyCommand
-	3,  // 5: messages.LobbyCommand.leave_lobby:type_name -> messages.LeaveLobbyCommand
-	4,  // 6: messages.LobbyCommand.set_ready:type_name -> messages.SetReadyCommand
-	5,  // 7: messages.LobbyCommand.set_color:type_name -> messages.SetColorCommand
-	6,  // 8: messages.LobbyCommand.update_settings:type_name -> messages.UpdateSettingsCommand
-	7,  // 9: messages.LobbyCommand.start_game:type_name -> messages.StartGameCommand
+	2,  // 4: messages.LobbyCommand.joinLobby:type_name -> messages.JoinLobbyCommand
+	3,  // 5: messages.LobbyCommand.leaveLobby:type_name -> messages.LeaveLobbyCommand
+	4,  // 6: messages.LobbyCommand.setReady:type_name -> messages.SetReadyCommand
+	5,  // 7: messages.LobbyCommand.setColor:type_name -> messages.SetColorCommand
+	6,  // 8: messages.LobbyCommand.updateSettings:type_name -> messages.UpdateSettingsCommand
+	7,  // 9: messages.LobbyCommand.startGame:type_name -> messages.StartGameCommand
 	16, // 10: messages.UpdateSettingsCommand.settings:type_name -> messages.GalaxyGenerateSettings
 	9,  // 11: messages.GameCommand.move_fleet:type_name -> messages.MoveFleetCommand
 	10, // 12: messages.GameCommand.queue_construction:type_name -> messages.QueueConstructionCommand

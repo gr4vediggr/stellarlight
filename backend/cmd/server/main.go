@@ -175,8 +175,8 @@ func registerGameRoutes(e *echo.Echo, sessionManager *session.SessionManager, au
 		}
 
 		return c.JSON(200, map[string]interface{}{
-			"session_id":  session.GetID(),
-			"invite_code": session.GetInviteCode(),
+			"sessionId":  session.GetID(),
+			"inviteCode": session.GetInviteCode(),
 		})
 	})
 
@@ -187,7 +187,7 @@ func registerGameRoutes(e *echo.Echo, sessionManager *session.SessionManager, au
 		}
 
 		var req struct {
-			InviteCode string `json:"invite_code"`
+			InviteCode string `json:"inviteCode"`
 		}
 		if err := c.Bind(&req); err != nil {
 			return c.JSON(400, map[string]string{"error": "Invalid request"})
@@ -199,7 +199,8 @@ func registerGameRoutes(e *echo.Echo, sessionManager *session.SessionManager, au
 		}
 
 		return c.JSON(200, map[string]interface{}{
-			"session_id": session.GetID(),
+			"sessionId":  session.GetID(),
+			"inviteCode": session.GetInviteCode(),
 		})
 	})
 
@@ -228,7 +229,8 @@ func registerGameRoutes(e *echo.Echo, sessionManager *session.SessionManager, au
 		}
 
 		return c.JSON(200, map[string]interface{}{
-			"session_id": session.GetID(),
+			"sessionId":  session.GetID(),
+			"inviteCode": session.GetInviteCode(),
 		})
 	})
 

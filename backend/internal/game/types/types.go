@@ -11,6 +11,8 @@ import (
 type Player struct {
 	User     *users.User
 	EmpireID uuid.UUID
+	Color    string
+	Ready    bool
 	JoinedAt time.Time
 	LastSeen time.Time
 	IsActive bool

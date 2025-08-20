@@ -106,3 +106,37 @@ VisionSystem:
 
 # Persistence: PostgresDB. 
 
+
+
+## Session flow
+
+:::mermaid
+flowchart TD
+    %% Login Flow
+    A[Player Opens Web Game] --> B[Login Page]
+    B -->|POST /api/auth/login| C{Login Successful?}
+    C -->|No| B
+    C -->|Yes| D[Dashboard]
+
+    %% Dashboard Options
+    D --> E[View / Modify Profile & Stats]
+    D --> F[Check Current Game<br/>GET /api/game/current]
+
+    %% If NOT in a game
+    F -->|No Current Game| G[Create New Game<br/>POST /api/game/create]
+    F -->|No Current Game| H[Join Existing Game<br/>POST /api/game/join]
+    F -->|No Current Game| I[Matchmaking<br/>Server Assigns Game]
+
+    %% If already in a game
+    F -->|Current Game Exists| J[Continue Game]
+    F -->|Current Game Exists| K[Quit Game]
+
+    %% Game Lobby
+    G --> L[Game Lobby<br/>WebSocket Connection]
+    H --> L
+    I --> L
+    J --> L
+
+    %% From Lobby to Gameplay
+    L --> M[Gameplay]
+::: 

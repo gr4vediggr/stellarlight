@@ -27,7 +27,7 @@ type Config struct {
 func Load() (Config, error) {
 	cfg := Config{
 		Port:        getEnvInt("PORT", 8080),
-		DatabaseURL: getEnvString("DATABASE_URL", "postgres://localhost/gamedb?sslmode=disable"),
+		DatabaseURL: getEnvString("DATABASE_URL", "postgres://stellarlight:stellarlight@localhost:5432/stellarlight?sslmode=disable"),
 		JWTSecret:   getEnvString("JWT_SECRET", "your-super-secret-key-change-in-production"),
 		Environment: getEnvString("ENVIRONMENT", "development"),
 		TLS: struct {
@@ -35,8 +35,8 @@ func Load() (Config, error) {
 			KeyFile  string
 		}{
 
-			CertFile: getEnvString("TLS_CERT_FILE", "server.crt"),
-			KeyFile:  getEnvString("TLS_KEY_FILE", "server.key"),
+			CertFile: getEnvString("TLS_CERT_FILE", "../cert/localhost.crt"),
+			KeyFile:  getEnvString("TLS_KEY_FILE", "../cert/localhost.key"),
 		},
 		AllowedOrigins: strings.Split(getEnvString("ALLOWED_ORIGINS", "*"), ","),
 	}

@@ -60,20 +60,20 @@ services:
     depends_on:
       - db
 
-volumes:
-  db_data:
-
   # frontend:
   #   build:
   #     context: ./frontend
   #     dockerfile: Dockerfile
-
   #   image: stellarlight-frontend
   #   container_name: stellarlight-frontend
   #   environment:
-  #     - VITE_API_URL=https://localhost:8443
+  #     - VITE_API_URL=https://backend:8443
+  #     - VITE_WS_URL=wss://backend:8443
   #   ports:
   #     - "3000:80"
   #   depends_on:
   #     - backend
   #   restart: unless-stopped
+
+volumes:
+  db_data:

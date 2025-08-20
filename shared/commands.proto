@@ -19,3 +19,7 @@ message QueueFleetConstructionCommand{
     string fleet_type = 2; // Type of fleet to construct
 }
 
+message DeclareFleetTypeCommand {
+  string fleet_id = 1; // ID of the fleet to declare
+  
+}

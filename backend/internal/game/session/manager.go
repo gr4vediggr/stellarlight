@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gr4vediggr/stellarlight/internal/game/events"
 	"github.com/gr4vediggr/stellarlight/internal/interfaces"
 	"github.com/gr4vediggr/stellarlight/internal/users"
 )
@@ -177,21 +176,6 @@ func (sm *SessionManager) LeaveSession(playerID uuid.UUID) error {
 		sm.cleanupSession(sessionID)
 	}
 
-	return nil
-}
-
-// ProcessCommand forwards a command to the appropriate session
-func (sm *SessionManager) ProcessCommand(playerID uuid.UUID, cmd *events.GameCommand) error {
-	session, err := sm.GetPlayerSession(playerID)
-	if err != nil {
-		return err
-	}
-
-	// Ensure command is from the correct player
-	cmd.PlayerID = playerID
-	cmd.Timestamp = time.Now().UnixNano()
-
-	session.ProcessCommand(cmd)
 	return nil
 }
 

@@ -2,16 +2,17 @@ package session
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/gr4vediggr/stellarlight/internal/game/events"
-	"github.com/gr4vediggr/stellarlight/internal/game/systems"
 	"github.com/gr4vediggr/stellarlight/internal/game/types"
 	"github.com/gr4vediggr/stellarlight/internal/interfaces"
 	"github.com/gr4vediggr/stellarlight/internal/users"
+	"github.com/gr4vediggr/stellarlight/pkg/messages"
 )
 
 // GameSessionState represents the current state of a game session
@@ -29,22 +30,19 @@ type GameSession struct {
 	ID         uuid.UUID
 	InviteCode string
 	State      GameSessionState
-	CreatedAt  time.Time // Players and connections
-	players    map[uuid.UUID]*types.Player
-	clients    map[uuid.UUID]interfaces.GameClientInterface
-	mu         sync.RWMutex
+	CreatedAt  time.Time
+	HostID     uuid.UUID // ID of the host player
+	// Players and connections
+	players map[uuid.UUID]*types.Player
+	clients map[uuid.UUID]interfaces.GameClientInterface
+	mu      sync.RWMutex
 
-	// Event system
-	eventBus *events.EventBus
-	systems  []types.GameSystem
-
-	// Game state
-	worldState *types.WorldState
+	// Game engine
+	engine interfaces.GameEngineInterface
 
 	// Lifecycle
 	ctx    context.Context
 	cancel context.CancelFunc
-	ticker *time.Ticker
 }
 
 // NewGameSession creates a new game session
@@ -56,12 +54,12 @@ func NewGameSession(creatorUser *users.User) *GameSession {
 		InviteCode: generateInviteCode(),
 		State:      StateWaiting,
 		CreatedAt:  time.Now(),
+		HostID:     creatorUser.ID, // Set creator as host
 		players:    make(map[uuid.UUID]*types.Player),
 		clients:    make(map[uuid.UUID]interfaces.GameClientInterface),
-		eventBus:   events.NewEventBus(),
-		worldState: types.NewWorldState(),
-		ctx:        ctx,
-		cancel:     cancel,
+
+		ctx:    ctx,
+		cancel: cancel,
 	}
 
 	// Add creator as first player
@@ -93,12 +91,6 @@ func (s *GameSession) AddPlayer(user *users.User) error {
 
 	s.players[user.ID] = player
 
-	// Publish player joined event
-	s.eventBus.Publish(&types.PlayerJoinedEvent{
-		BaseEvent: types.BaseEvent{SessionID: s.ID},
-		Player:    player,
-	})
-
 	return nil
 }
 
@@ -115,8 +107,8 @@ func (s *GameSession) AddClient(client interfaces.GameClientInterface) {
 		player.IsActive = true
 	}
 
-	// Send current game state to new client
-	s.sendGameStateToClient(client)
+	// Send lobby state to client
+	s.broadcastLobbyState()
 }
 
 // RemoveClient disconnects a websocket client
@@ -133,111 +125,34 @@ func (s *GameSession) RemoveClient(userID uuid.UUID) {
 }
 
 // ProcessCommand handles a command from a client
-func (s *GameSession) ProcessCommand(cmd *events.GameCommand) {
+func (s *GameSession) ProcessCommand(cmd *events.ClientCommandWrapper) {
 	// Validate command
 	if err := s.validateCommand(cmd); err != nil {
 		s.sendErrorToClient(cmd.PlayerID, err)
 		return
 	}
 
-	// Convert command to event and publish
-	event := s.commandToEvent(cmd)
-	if event != nil {
-		s.eventBus.Publish(event)
-	}
-}
-
-// StartGame transitions from waiting to active state
-func (s *GameSession) StartGame() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.State != StateWaiting {
-		return ErrInvalidStateTransition
+	if lc := cmd.Command.GetLobbyCommand(); lc != nil {
+		s.handleLobbyCommand(cmd.PlayerID, lc)
 	}
 
-	// Initialize game systems
-	s.initializeSystems()
-
-	// Start game tick
-	s.ticker = time.NewTicker(100 * time.Millisecond) // 10 TPS
-	go s.gameLoop()
-
-	s.State = StateActive
-
-	// Publish game started event
-	s.eventBus.Publish(&types.GameStartedEvent{
-		BaseEvent: types.BaseEvent{SessionID: s.ID},
-	})
-
-	return nil
-}
-
-// gameLoop runs the main game tick
-func (s *GameSession) gameLoop() {
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case <-s.ticker.C:
-			s.tick()
-		}
+	if gc := cmd.Command.GetGameCommand(); gc != nil {
+		s.engine.ProcessGameCommand(cmd)
 	}
-}
 
-// tick executes one game tick
-func (s *GameSession) tick() {
-	// Publish tick event to all systems
-	s.eventBus.Publish(&types.GameTickEvent{
-		BaseEvent: types.BaseEvent{
-			SessionID: s.ID,
-		},
-		Tick:      s.worldState.Turn,
-		DeltaTime: 100 * time.Millisecond,
-	})
-
-	s.worldState.Turn++
 }
 
 // Shutdown cleanly shuts down the game session
 func (s *GameSession) Shutdown() {
-	s.cancel()
-	if s.ticker != nil {
-		s.ticker.Stop()
-	}
-
-	// Disconnect all clients
-	s.mu.Lock()
-	for _, client := range s.clients {
-		client.Disconnect()
-	}
-	s.mu.Unlock()
-
-	// Shutdown systems
-	for _, system := range s.systems {
-		system.Shutdown()
-	}
+	// Todo
 }
 
-// Helper methods
-func (s *GameSession) initializeSystems() {
-	// Initialize all game systems and subscribe them to events
-	s.systems = []types.GameSystem{
-		systems.NewEconomySystem(s.eventBus, s.worldState),
-		systems.NewCombatSystem(s.eventBus, s.worldState),
-		systems.NewClientUpdateSystem(s.eventBus, s.clients),
-		// Add more systems as needed
-	}
-
-	for _, system := range s.systems {
-		system.Initialize()
-	}
-}
-
-func (s *GameSession) validateCommand(cmd *events.GameCommand) error {
+func (s *GameSession) validateCommand(cmd *events.ClientCommandWrapper) error {
 	// Validate player exists and is active
 	s.mu.RLock()
-	player, exists := s.players[cmd.PlayerID]
+	id := cmd.PlayerID
+
+	player, exists := s.players[id]
 	s.mu.RUnlock()
 
 	if !exists {
@@ -252,31 +167,118 @@ func (s *GameSession) validateCommand(cmd *events.GameCommand) error {
 	return nil
 }
 
-func (s *GameSession) commandToEvent(cmd *events.GameCommand) events.GameEvent {
-	// Convert commands to appropriate events
-	switch cmd.Type {
-	case "move_fleet":
-		return &types.FleetMoveCommandEvent{
-			BaseEvent: types.BaseEvent{SessionID: s.ID},
-			PlayerID:  cmd.PlayerID,
-			Data:      cmd.Data,
-		}
-	case "build_ship":
-		return &types.BuildShipCommandEvent{
-			BaseEvent: types.BaseEvent{SessionID: s.ID},
-			PlayerID:  cmd.PlayerID,
-			Data:      cmd.Data,
-		}
-	// Add more command types
-	default:
-		return nil
-	}
+func (s *GameSession) GetInviteCode() string {
+	return s.InviteCode
 }
 
-func (s *GameSession) sendGameStateToClient(client interfaces.GameClientInterface) {
-	// Send current game state to client
-	state := s.getGameStateForPlayer(client.GetUserID())
-	client.SendMessage("game_state_update", state)
+func generateInviteCode() string {
+	// Generate a short, human-readable invite code
+	return "GAME" + uuid.New().String()[:8]
+}
+
+func (s *GameSession) handleLobbyCommand(playerID uuid.UUID, lobbyCmd *messages.LobbyCommand) {
+	// handle all lobby commands
+
+	// Example: handle player ready state
+	if sr := lobbyCmd.GetSetReady(); sr != nil {
+		s.handlePlayerReady(playerID, sr)
+	} else if sc := lobbyCmd.GetSetColor(); sc != nil {
+		s.handlePlayerColor(playerID, sc)
+
+	} else if st := lobbyCmd.GetUpdateSettings(); st != nil {
+		s.handleSettingsUpdate(playerID, st)
+	}
+
+	// broadcast new state
+	s.broadcastLobbyState()
+}
+
+func (s *GameSession) handlePlayerReady(playerID uuid.UUID, data *messages.SetReadyCommand) {
+	// Update player ready state (implementation needed)
+	// For now, just broadcast updated lobby state
+}
+
+func (s *GameSession) handlePlayerColor(playerID uuid.UUID, data *messages.SetColorCommand) {
+	// Update player color (implementation needed)
+	// For now, just broadcast updated lobby state
+}
+
+func (s *GameSession) handleSettingsUpdate(playerID uuid.UUID, data *messages.UpdateSettingsCommand) {
+	// Update lobby settings (implementation needed)
+	// For now, just broadcast updated lobby state
+}
+
+func (s *GameSession) handleStartGame(playerID uuid.UUID) {
+	// Start the game if conditions are met
+}
+
+func (s *GameSession) handlePlayerLeave(playerID uuid.UUID) {
+	// Remove player from session (implementation needed)
+	// For now, just broadcast updated lobby state
+}
+
+func (s *GameSession) broadcastLobbyState() {
+	lobbyState := s.createLobbyStateMessage()
+	log.Println("broadcasting lobby")
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	msg := &messages.ServerMessage{
+		Message: &messages.ServerMessage_LobbyMessage{
+			LobbyMessage: lobbyState,
+		},
+	}
+	for _, client := range s.clients {
+
+		go client.SendMessage(msg)
+	}
+	log.Println("done broadcasting lobby")
+
+}
+
+func (s *GameSession) createLobbyStateMessage() *messages.LobbyMessage {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	// Convert session players to lobby players
+	var lobbyPlayers []*messages.LobbyPlayer
+	for playerID, player := range s.players {
+		lobbyPlayer := &messages.LobbyPlayer{
+			PlayerId:    playerID.String(),
+			DisplayName: player.User.DisplayName,
+			IsHost:      s.HostID == playerID,
+			IsReady:     false, // TODO: Implement ready state tracking
+			Color:       "",    // TODO: Implement color tracking
+		}
+		lobbyPlayers = append(lobbyPlayers, lobbyPlayer)
+	}
+
+	// Determine lobby status
+	var status messages.LobbyStateMessage_LobbyStatus
+	switch s.State {
+	case StateWaiting:
+		status = messages.LobbyStateMessage_WAITING
+	case StateActive:
+		status = messages.LobbyStateMessage_IN_GAME
+	default:
+		status = messages.LobbyStateMessage_WAITING
+	}
+
+	// Create lobby state
+	lobbyStateMsg := &messages.LobbyStateMessage{
+		SessionId:    s.ID.String(),
+		InviteCode:   s.InviteCode,
+		HostPlayerId: s.HostID.String(),
+		Status:       status,
+		Players:      lobbyPlayers,
+		Settings:     nil, // TODO: Implement settings
+	}
+
+	return &messages.LobbyMessage{
+		Content: &messages.LobbyMessage_LobbyState{
+			LobbyState: lobbyStateMsg,
+		},
+	}
 }
 
 func (s *GameSession) sendErrorToClient(playerID uuid.UUID, err error) {
@@ -284,23 +286,19 @@ func (s *GameSession) sendErrorToClient(playerID uuid.UUID, err error) {
 	client, exists := s.clients[playerID]
 	s.mu.RUnlock()
 
-	if exists {
-		client.SendMessage("error", map[string]string{"error": err.Error()})
+	if !exists {
+		return
 	}
-}
 
-func (s *GameSession) getGameStateForPlayer(playerID uuid.UUID) interface{} {
-	// Return filtered game state for specific player
-	// This would include only what the player should see
-	return map[string]interface{}{
-		"session_id": s.ID,
-		"state":      s.State,
-		"turn":       s.worldState.Turn,
-		// Add more state data
+	// Create error message
+	errorMsg := &messages.ErrorMessage{
+		ErrorMessage: err.Error(),
 	}
-}
 
-func generateInviteCode() string {
-	// Generate a short, human-readable invite code
-	return "GAME" + uuid.New().String()[:8]
+	// Send to the specific client
+	if protobufClient, ok := client.(interface {
+		SendErrorMessage(msg *messages.ErrorMessage, messageID string) error
+	}); ok {
+		protobufClient.SendErrorMessage(errorMsg, "")
+	}
 }

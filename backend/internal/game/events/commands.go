@@ -1,6 +1,9 @@
 package events
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"github.com/gr4vediggr/stellarlight/pkg/messages"
+)
 
 // GameCommand represents a command from a player
 type GameCommand struct {
@@ -9,4 +12,9 @@ type GameCommand struct {
 	Type      string                 `json:"type"`
 	Data      map[string]interface{} `json:"data"`
 	Timestamp int64                  `json:"timestamp"`
+}
+
+type ClientCommandWrapper struct {
+	PlayerID uuid.UUID
+	Command  *messages.ClientCommand
 }

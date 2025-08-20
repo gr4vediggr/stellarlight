@@ -79,31 +79,49 @@ func (h *Handler) Login(c echo.Context) error {
 }
 
 func (h *Handler) RefreshToken(c echo.Context) error {
-	// Read refresh token from cookie
+	var refreshToken string
+
+	// First try to get refresh token from cookie (existing behavior)
 	cookie, err := c.Cookie("refresh_token")
-	if err != nil {
+	if err == nil {
+		refreshToken = cookie.Value
+	} else {
+		// Fallback: try to get refresh token from request body
+		var req struct {
+			RefreshToken string `json:"refreshToken"`
+		}
+		if err := c.Bind(&req); err != nil {
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Missing refresh token"})
+		}
+		refreshToken = req.RefreshToken
+	}
+
+	if refreshToken == "" {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Missing refresh token"})
 	}
 
-	resp, err := h.service.RefreshToken(c.Request().Context(), cookie.Value)
+	resp, err := h.service.RefreshToken(c.Request().Context(), refreshToken)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": err.Error()})
 	}
 
-	// rotate cookie
-	c.SetCookie(&http.Cookie{
-		Name:     "refresh_token",
-		Value:    resp.RefreshToken,
-		Path:     "/auth/refresh",
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-	})
+	// If we got the token from cookie, rotate the cookie
+	if cookie != nil {
+		c.SetCookie(&http.Cookie{
+			Name:     "refresh_token",
+			Value:    resp.RefreshToken,
+			Path:     "/auth/refresh",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteStrictMode,
+		})
+	}
 
-	// return new access token
+	// Return new access token and refresh token (for body-based requests)
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"token": resp.Token,
-		"user":  resp.User,
+		"token":        resp.Token,
+		"refreshToken": resp.RefreshToken,
+		"user":         resp.User,
 	})
 }
 

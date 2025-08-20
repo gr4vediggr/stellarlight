@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+
+package messages;
+option go_package = "pkg/messages";
+
+message Building {
+    string id = 1; // Unique identifier for the building type
+    string name = 2; // Name of the building
+    int32 level = 4; // Level of the building
+    int64 construction_time = 5; // Time required to construct the building
+}
+
+message Fleet {
+    string id = 1; // Unique identifier for the fleet
+    string owner_id = 2; // ID of the player who owns the fleet
+    string name = 3; // Name of the fleet
+    string location_id = 4;
+    string state = 5;
+    repeated Ship ships = 6; // List of ships in the fleet
+}
+
+message Ship {
+    string id = 1; // Unique identifier for the ship
+    string name = 2; // Name of the ship
+    string type = 3; // Type of the ship (e.g., "fighter", "bomber", etc.)
+    int32 hit_points = 4; // Hit points of the ship
+    int64 construction_time = 5; // Time required to construct the ship
+}
+
+message Colony {
+    string id = 1; // Unique identifier for the colony
+    string name = 2; // Name of the colony
+    string owner_id = 3; // ID of the player who owns the colony
+    string planet_id = 4; // ID of the planet where the colony is situated
+    int64 population = 5; // Population of the colony
+    repeated Building buildings = 6; // List of buildings in the colony
+}
+
+
+
+message VisibleGameStateUpdate {
+    repeated Fleet fleets = 1; // List of fleets in the game
+    repeated Colony colonies = 2; // List of colonies in the game
+    repeated Ship ships = 4; // List of ships in the game
+}
+

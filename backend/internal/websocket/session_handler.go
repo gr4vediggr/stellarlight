@@ -67,30 +67,30 @@ func (h *SessionHandler) HandleWebSocket(c echo.Context) error {
 		slog.Info("Created new session for player", slog.String("player", user.Email), slog.String("session_id", gameSession.GetID().String()))
 	} else {
 		slog.Info("Player rejoining existing session", slog.String("player", user.Email), slog.String("session_id", gameSession.GetID().String()))
-	} // Upgrade connection
-	conn, err := upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
+	}
+
+	// Upgrade connection
+	conn, err := protobufUpgrader.Upgrade(c.Response().Writer, c.Request(), nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade error: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to upgrade connection"})
 	}
 
-	// Create client with disconnect handler that removes it from session
-	client := NewClient(conn, user, h.sessionManager, func(userID uuid.UUID) {
+	// Disconnect handler that removes client from their session
+	disconnectHandler := func(userID uuid.UUID) {
 		// Find and remove client from their session
 		if session, err := h.sessionManager.GetPlayerSession(userID); err == nil {
 			session.RemoveClient(userID)
 			log.Printf("Client disconnected from session: %s (session: %s)", user.Email, session.GetID().String())
 		}
-	})
+	}
 
-	// Add client directly to the session
+	// Create protobuf client
+	client := NewProtobufClient(conn, user, gameSession, disconnectHandler)
+
+	client.Start()
+
 	gameSession.AddClient(client)
-
-	log.Printf("Client connected directly to session: %s (session: %s)", user.Email, gameSession.GetID().String())
-
-	// Start client goroutines
-	go client.writePump()
-	go client.readPump()
-
+	log.Printf("Protobuf client connected to session: %s (session: %s)", user.Email, gameSession.GetID().String())
 	return nil // Don't send JSON response after WebSocket upgrade
 }

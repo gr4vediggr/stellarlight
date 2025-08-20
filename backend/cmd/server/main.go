@@ -10,16 +10,15 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-
 	"github.com/gr4vediggr/stellarlight/internal/auth"
 	"github.com/gr4vediggr/stellarlight/internal/config"
 	"github.com/gr4vediggr/stellarlight/internal/database"
 	"github.com/gr4vediggr/stellarlight/internal/game/session"
 	"github.com/gr4vediggr/stellarlight/internal/users"
 	"github.com/gr4vediggr/stellarlight/internal/websocket"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
@@ -29,15 +28,20 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// Initialize database
-	db, err := pgx.Connect(context.Background(), cfg.DatabaseURL)
+	// Initialize database connection pool
+	pool, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("Failed to create connection pool: %v", err)
 	}
-	defer db.Close(context.Background())
+	defer pool.Close()
+
+	// Test the connection
+	if err := pool.Ping(context.Background()); err != nil {
+		log.Fatalf("Failed to ping database: %v", err)
+	}
 
 	// Initialize repositories and services
-	userRepo := database.NewPostgresUserStore(db)
+	userRepo := database.NewPostgresUserStore(pool)
 	authService := auth.NewService(userRepo, cfg.JWTSecret)
 
 	// Initialize game session manager
@@ -140,12 +144,15 @@ func setupAuthRoutes(e *echo.Echo, authService *auth.AuthService) {
 func getUserFromContext(c echo.Context, authService *auth.AuthService) (*users.User, error) {
 	userID, ok := c.Get("userID").(uuid.UUID)
 	if !ok {
-		return nil, echo.NewHTTPError(400, "Invalid user ID")
+		return nil, echo.NewHTTPError(401, "Invalid user ID in token")
 	}
 
 	user, err := authService.GetUserByID(c.Request().Context(), userID)
 	if err != nil {
-		return nil, echo.NewHTTPError(400, "User not found")
+		// If user doesn't exist in DB but token is valid, this is a serious issue
+		// Log it and return 401 to force re-authentication
+		log.Printf("ERROR: Valid token contains non-existent user ID %s: %v", userID.String(), err)
+		return nil, echo.NewHTTPError(401, "User account not found - please re-login")
 	}
 
 	return user, nil
@@ -169,7 +176,7 @@ func registerGameRoutes(e *echo.Echo, sessionManager *session.SessionManager, au
 
 		return c.JSON(200, map[string]interface{}{
 			"session_id":  session.GetID(),
-			"invite_code": session.GetID(),
+			"invite_code": session.GetInviteCode(),
 		})
 	})
 
@@ -225,21 +232,4 @@ func registerGameRoutes(e *echo.Echo, sessionManager *session.SessionManager, au
 		})
 	})
 
-	gameGroup.POST("/start", func(c echo.Context) error {
-		user, err := getUserFromContext(c, authService)
-		if err != nil {
-			return err
-		}
-
-		session, err := sessionManager.GetPlayerSession(user.ID)
-		if err != nil {
-			return c.JSON(404, map[string]string{"error": "Not in any game"})
-		}
-
-		if err := session.StartGame(); err != nil {
-			return c.JSON(400, map[string]string{"error": err.Error()})
-		}
-
-		return c.JSON(200, map[string]string{"message": "Game started successfully"})
-	})
 }

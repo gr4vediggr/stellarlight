@@ -30,6 +30,11 @@ export interface QueueFleetConstructionCommand {
   fleetType: string;
 }
 
+export interface DeclareFleetTypeCommand {
+  /** ID of the fleet to declare */
+  fleetId: string;
+}
+
 function createBaseFleetMoveCommand(): FleetMoveCommand {
   return { fleetId: "", destinationSystemId: "" };
 }
@@ -256,6 +261,64 @@ export const QueueFleetConstructionCommand: MessageFns<QueueFleetConstructionCom
     const message = createBaseQueueFleetConstructionCommand();
     message.starbaseId = object.starbaseId ?? "";
     message.fleetType = object.fleetType ?? "";
+    return message;
+  },
+};
+
+function createBaseDeclareFleetTypeCommand(): DeclareFleetTypeCommand {
+  return { fleetId: "" };
+}
+
+export const DeclareFleetTypeCommand: MessageFns<DeclareFleetTypeCommand> = {
+  encode(message: DeclareFleetTypeCommand, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.fleetId !== "") {
+      writer.uint32(10).string(message.fleetId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeclareFleetTypeCommand {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeclareFleetTypeCommand();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fleetId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeclareFleetTypeCommand {
+    return { fleetId: isSet(object.fleetId) ? globalThis.String(object.fleetId) : "" };
+  },
+
+  toJSON(message: DeclareFleetTypeCommand): unknown {
+    const obj: any = {};
+    if (message.fleetId !== "") {
+      obj.fleetId = message.fleetId;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeclareFleetTypeCommand>, I>>(base?: I): DeclareFleetTypeCommand {
+    return DeclareFleetTypeCommand.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DeclareFleetTypeCommand>, I>>(object: I): DeclareFleetTypeCommand {
+    const message = createBaseDeclareFleetTypeCommand();
+    message.fleetId = object.fleetId ?? "";
     return message;
   },
 };

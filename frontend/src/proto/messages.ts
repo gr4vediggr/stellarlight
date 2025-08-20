@@ -7,37 +7,24 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { FleetMoveCommand, QueueConstructionCommand, QueueFleetConstructionCommand } from "./commands";
-import { GameStateUpdate } from "./gamestate";
 
 export const protobufPackage = "messages";
 
 export interface GameMessage {
-  /** Unique identifier for the message */
-  messageId: string;
-  /** ID of the game this message belongs to */
-  gameId: string;
-  /** ID of the player sending the packet */
-  playerId: string;
   timestamp: number;
-  /** Unique session identifier for the connection */
-  sessionToken: string;
-  /** Chat message sent by the player */
-  chatMessage?:
-    | ChatMessage
-    | undefined;
-  /** Command issued by the player */
-  playerCommand?:
-    | PlayerCommand
-    | undefined;
-  /** Update to the game state */
-  gameStateUpdate?: GameStateUpdate | undefined;
+  /** Command issued by the player client to the server */
+  gameState?: GameStateMessage | undefined;
 }
 
-export interface ChatMessage {
+export interface SendChatCommand {
+  /** Player ID of the sender */
+  playerId: string;
+  /** Display name of the player sending the message */
+  displayName: string;
+  /** T */
+  timestamp: number;
   /** The chat message content */
   message: string;
-  /** The channel or room where the message is sent */
-  channel: string;
 }
 
 export interface PlayerCommand {
@@ -53,48 +40,25 @@ export interface PlayerCommand {
   queueFleetConstructionCommand?: QueueFleetConstructionCommand | undefined;
 }
 
+export interface GameStateMessage {
+  data: string;
+}
+
 export interface IdMessage {
   id: number;
 }
 
 function createBaseGameMessage(): GameMessage {
-  return {
-    messageId: "",
-    gameId: "",
-    playerId: "",
-    timestamp: 0,
-    sessionToken: "",
-    chatMessage: undefined,
-    playerCommand: undefined,
-    gameStateUpdate: undefined,
-  };
+  return { timestamp: 0, gameState: undefined };
 }
 
 export const GameMessage: MessageFns<GameMessage> = {
   encode(message: GameMessage, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.messageId !== "") {
-      writer.uint32(10).string(message.messageId);
-    }
-    if (message.gameId !== "") {
-      writer.uint32(18).string(message.gameId);
-    }
-    if (message.playerId !== "") {
-      writer.uint32(26).string(message.playerId);
-    }
     if (message.timestamp !== 0) {
-      writer.uint32(32).int64(message.timestamp);
+      writer.uint32(8).int64(message.timestamp);
     }
-    if (message.sessionToken !== "") {
-      writer.uint32(42).string(message.sessionToken);
-    }
-    if (message.chatMessage !== undefined) {
-      ChatMessage.encode(message.chatMessage, writer.uint32(50).fork()).join();
-    }
-    if (message.playerCommand !== undefined) {
-      PlayerCommand.encode(message.playerCommand, writer.uint32(58).fork()).join();
-    }
-    if (message.gameStateUpdate !== undefined) {
-      GameStateUpdate.encode(message.gameStateUpdate, writer.uint32(66).fork()).join();
+    if (message.gameState !== undefined) {
+      GameStateMessage.encode(message.gameState, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -107,11 +71,11 @@ export const GameMessage: MessageFns<GameMessage> = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
-          if (tag !== 10) {
+          if (tag !== 8) {
             break;
           }
 
-          message.messageId = reader.string();
+          message.timestamp = longToNumber(reader.int64());
           continue;
         }
         case 2: {
@@ -119,55 +83,7 @@ export const GameMessage: MessageFns<GameMessage> = {
             break;
           }
 
-          message.gameId = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.playerId = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.timestamp = longToNumber(reader.int64());
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.sessionToken = reader.string();
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.chatMessage = ChatMessage.decode(reader, reader.uint32());
-          continue;
-        }
-        case 7: {
-          if (tag !== 58) {
-            break;
-          }
-
-          message.playerCommand = PlayerCommand.decode(reader, reader.uint32());
-          continue;
-        }
-        case 8: {
-          if (tag !== 66) {
-            break;
-          }
-
-          message.gameStateUpdate = GameStateUpdate.decode(reader, reader.uint32());
+          message.gameState = GameStateMessage.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -181,42 +97,18 @@ export const GameMessage: MessageFns<GameMessage> = {
 
   fromJSON(object: any): GameMessage {
     return {
-      messageId: isSet(object.messageId) ? globalThis.String(object.messageId) : "",
-      gameId: isSet(object.gameId) ? globalThis.String(object.gameId) : "",
-      playerId: isSet(object.playerId) ? globalThis.String(object.playerId) : "",
       timestamp: isSet(object.timestamp) ? globalThis.Number(object.timestamp) : 0,
-      sessionToken: isSet(object.sessionToken) ? globalThis.String(object.sessionToken) : "",
-      chatMessage: isSet(object.chatMessage) ? ChatMessage.fromJSON(object.chatMessage) : undefined,
-      playerCommand: isSet(object.playerCommand) ? PlayerCommand.fromJSON(object.playerCommand) : undefined,
-      gameStateUpdate: isSet(object.gameStateUpdate) ? GameStateUpdate.fromJSON(object.gameStateUpdate) : undefined,
+      gameState: isSet(object.gameState) ? GameStateMessage.fromJSON(object.gameState) : undefined,
     };
   },
 
   toJSON(message: GameMessage): unknown {
     const obj: any = {};
-    if (message.messageId !== "") {
-      obj.messageId = message.messageId;
-    }
-    if (message.gameId !== "") {
-      obj.gameId = message.gameId;
-    }
-    if (message.playerId !== "") {
-      obj.playerId = message.playerId;
-    }
     if (message.timestamp !== 0) {
       obj.timestamp = Math.round(message.timestamp);
     }
-    if (message.sessionToken !== "") {
-      obj.sessionToken = message.sessionToken;
-    }
-    if (message.chatMessage !== undefined) {
-      obj.chatMessage = ChatMessage.toJSON(message.chatMessage);
-    }
-    if (message.playerCommand !== undefined) {
-      obj.playerCommand = PlayerCommand.toJSON(message.playerCommand);
-    }
-    if (message.gameStateUpdate !== undefined) {
-      obj.gameStateUpdate = GameStateUpdate.toJSON(message.gameStateUpdate);
+    if (message.gameState !== undefined) {
+      obj.gameState = GameStateMessage.toJSON(message.gameState);
     }
     return obj;
   },
@@ -226,43 +118,39 @@ export const GameMessage: MessageFns<GameMessage> = {
   },
   fromPartial<I extends Exact<DeepPartial<GameMessage>, I>>(object: I): GameMessage {
     const message = createBaseGameMessage();
-    message.messageId = object.messageId ?? "";
-    message.gameId = object.gameId ?? "";
-    message.playerId = object.playerId ?? "";
     message.timestamp = object.timestamp ?? 0;
-    message.sessionToken = object.sessionToken ?? "";
-    message.chatMessage = (object.chatMessage !== undefined && object.chatMessage !== null)
-      ? ChatMessage.fromPartial(object.chatMessage)
-      : undefined;
-    message.playerCommand = (object.playerCommand !== undefined && object.playerCommand !== null)
-      ? PlayerCommand.fromPartial(object.playerCommand)
-      : undefined;
-    message.gameStateUpdate = (object.gameStateUpdate !== undefined && object.gameStateUpdate !== null)
-      ? GameStateUpdate.fromPartial(object.gameStateUpdate)
+    message.gameState = (object.gameState !== undefined && object.gameState !== null)
+      ? GameStateMessage.fromPartial(object.gameState)
       : undefined;
     return message;
   },
 };
 
-function createBaseChatMessage(): ChatMessage {
-  return { message: "", channel: "" };
+function createBaseSendChatCommand(): SendChatCommand {
+  return { playerId: "", displayName: "", timestamp: 0, message: "" };
 }
 
-export const ChatMessage: MessageFns<ChatMessage> = {
-  encode(message: ChatMessage, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.message !== "") {
-      writer.uint32(10).string(message.message);
+export const SendChatCommand: MessageFns<SendChatCommand> = {
+  encode(message: SendChatCommand, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.playerId !== "") {
+      writer.uint32(10).string(message.playerId);
     }
-    if (message.channel !== "") {
-      writer.uint32(18).string(message.channel);
+    if (message.displayName !== "") {
+      writer.uint32(18).string(message.displayName);
+    }
+    if (message.timestamp !== 0) {
+      writer.uint32(24).int64(message.timestamp);
+    }
+    if (message.message !== "") {
+      writer.uint32(34).string(message.message);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ChatMessage {
+  decode(input: BinaryReader | Uint8Array, length?: number): SendChatCommand {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseChatMessage();
+    const message = createBaseSendChatCommand();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -271,7 +159,7 @@ export const ChatMessage: MessageFns<ChatMessage> = {
             break;
           }
 
-          message.message = reader.string();
+          message.playerId = reader.string();
           continue;
         }
         case 2: {
@@ -279,7 +167,23 @@ export const ChatMessage: MessageFns<ChatMessage> = {
             break;
           }
 
-          message.channel = reader.string();
+          message.displayName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.timestamp = longToNumber(reader.int64());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.message = reader.string();
           continue;
         }
       }
@@ -291,31 +195,41 @@ export const ChatMessage: MessageFns<ChatMessage> = {
     return message;
   },
 
-  fromJSON(object: any): ChatMessage {
+  fromJSON(object: any): SendChatCommand {
     return {
+      playerId: isSet(object.playerId) ? globalThis.String(object.playerId) : "",
+      displayName: isSet(object.displayName) ? globalThis.String(object.displayName) : "",
+      timestamp: isSet(object.timestamp) ? globalThis.Number(object.timestamp) : 0,
       message: isSet(object.message) ? globalThis.String(object.message) : "",
-      channel: isSet(object.channel) ? globalThis.String(object.channel) : "",
     };
   },
 
-  toJSON(message: ChatMessage): unknown {
+  toJSON(message: SendChatCommand): unknown {
     const obj: any = {};
+    if (message.playerId !== "") {
+      obj.playerId = message.playerId;
+    }
+    if (message.displayName !== "") {
+      obj.displayName = message.displayName;
+    }
+    if (message.timestamp !== 0) {
+      obj.timestamp = Math.round(message.timestamp);
+    }
     if (message.message !== "") {
       obj.message = message.message;
-    }
-    if (message.channel !== "") {
-      obj.channel = message.channel;
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ChatMessage>, I>>(base?: I): ChatMessage {
-    return ChatMessage.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<SendChatCommand>, I>>(base?: I): SendChatCommand {
+    return SendChatCommand.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<ChatMessage>, I>>(object: I): ChatMessage {
-    const message = createBaseChatMessage();
+  fromPartial<I extends Exact<DeepPartial<SendChatCommand>, I>>(object: I): SendChatCommand {
+    const message = createBaseSendChatCommand();
+    message.playerId = object.playerId ?? "";
+    message.displayName = object.displayName ?? "";
+    message.timestamp = object.timestamp ?? 0;
     message.message = object.message ?? "";
-    message.channel = object.channel ?? "";
     return message;
   },
 };
@@ -420,6 +334,64 @@ export const PlayerCommand: MessageFns<PlayerCommand> = {
       (object.queueFleetConstructionCommand !== undefined && object.queueFleetConstructionCommand !== null)
         ? QueueFleetConstructionCommand.fromPartial(object.queueFleetConstructionCommand)
         : undefined;
+    return message;
+  },
+};
+
+function createBaseGameStateMessage(): GameStateMessage {
+  return { data: "" };
+}
+
+export const GameStateMessage: MessageFns<GameStateMessage> = {
+  encode(message: GameStateMessage, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.data !== "") {
+      writer.uint32(10).string(message.data);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GameStateMessage {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGameStateMessage();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.data = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GameStateMessage {
+    return { data: isSet(object.data) ? globalThis.String(object.data) : "" };
+  },
+
+  toJSON(message: GameStateMessage): unknown {
+    const obj: any = {};
+    if (message.data !== "") {
+      obj.data = message.data;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GameStateMessage>, I>>(base?: I): GameStateMessage {
+    return GameStateMessage.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GameStateMessage>, I>>(object: I): GameStateMessage {
+    const message = createBaseGameStateMessage();
+    message.data = object.data ?? "";
     return message;
   },
 };

@@ -1,15 +1,14 @@
 package systems
 
 import (
-	"encoding/json"
 	"log"
 	"sync"
 
 	"github.com/google/uuid"
 
 	"github.com/gr4vediggr/stellarlight/internal/game/events"
-	"github.com/gr4vediggr/stellarlight/internal/game/types"
 	"github.com/gr4vediggr/stellarlight/internal/interfaces"
+	"github.com/gr4vediggr/stellarlight/pkg/messages"
 )
 
 // ClientUpdateSystem handles sending updates to connected clients
@@ -62,68 +61,38 @@ func (s *ClientUpdateSystem) GetName() string {
 }
 
 func (s *ClientUpdateSystem) handleShipBuilt(event events.GameEvent) {
-	shipEvent := event.(*types.ShipBuiltEvent)
 
-	// Send to the player who built the ship
-	s.sendToPlayer(shipEvent.PlayerID, "ship_built", map[string]interface{}{
-		"ship_type": shipEvent.ShipType,
-		"ship_id":   shipEvent.ShipID,
-		"system_id": shipEvent.SystemID,
-	})
 }
 
 func (s *ClientUpdateSystem) handleFleetMoved(event events.GameEvent) {
-	fleetEvent := event.(*types.FleetMovedEvent)
 
-	// Send to all players (they can filter based on visibility)
-	s.broadcastToAll("fleet_moved", map[string]interface{}{
-		"fleet_id":     fleetEvent.FleetID,
-		"from_system":  fleetEvent.FromSystem,
-		"to_system":    fleetEvent.ToSystem,
-		"arrival_time": fleetEvent.ArrivalTime,
-	})
 }
 
 func (s *ClientUpdateSystem) handleGameStateUpdate(event events.GameEvent) {
-	updateEvent := event.(*types.GameStateUpdateEvent)
 
-	s.broadcastToAll("game_state_update", map[string]interface{}{
-		"update_type": updateEvent.UpdateType,
-		"data":        updateEvent.Data,
-	})
 }
 
 func (s *ClientUpdateSystem) handlePlayerJoined(event events.GameEvent) {
-	playerEvent := event.(*types.PlayerJoinedEvent)
 
-	s.broadcastToAll("player_joined", map[string]interface{}{
-		"player_id":    playerEvent.Player.User.ID,
-		"display_name": playerEvent.Player.User.DisplayName,
-		"empire_id":    playerEvent.Player.EmpireID,
-	})
 }
 
 func (s *ClientUpdateSystem) handleGameStarted(event events.GameEvent) {
-	gameEvent := event.(*types.GameStartedEvent)
 
-	s.broadcastToAll("game_started", map[string]interface{}{
-		"session_id": gameEvent.SessionID,
-	})
 }
 
-func (s *ClientUpdateSystem) sendToPlayer(playerID uuid.UUID, messageType string, data interface{}) {
+func (s *ClientUpdateSystem) SendToPlayer(playerID uuid.UUID, message *messages.ServerMessage) {
 	s.mu.RLock()
 	client, exists := s.clients[playerID]
 	s.mu.RUnlock()
 
 	if exists && client != nil {
-		if err := client.SendMessage(messageType, data); err != nil {
+		if err := client.SendMessage(message); err != nil {
 			log.Printf("Failed to send message to player %s: %v", playerID, err)
 		}
 	}
 }
 
-func (s *ClientUpdateSystem) broadcastToAll(messageType string, data interface{}) {
+func (s *ClientUpdateSystem) BroadcastToAll(message *messages.ServerMessage) {
 	s.mu.RLock()
 	clients := make([]interfaces.GameClientInterface, 0, len(s.clients))
 	for _, client := range s.clients {
@@ -135,18 +104,8 @@ func (s *ClientUpdateSystem) broadcastToAll(messageType string, data interface{}
 
 	// Send to all clients
 	for _, client := range clients {
-		if err := client.SendMessage(messageType, data); err != nil {
+		if err := client.SendMessage(message); err != nil {
 			log.Printf("Failed to broadcast message to client: %v", err)
 		}
 	}
-}
-
-func (s *ClientUpdateSystem) sendGameStateToPlayer(playerID uuid.UUID, gameState interface{}) {
-	data, err := json.Marshal(gameState)
-	if err != nil {
-		log.Printf("Failed to marshal game state: %v", err)
-		return
-	}
-
-	s.sendToPlayer(playerID, "full_game_state", json.RawMessage(data))
 }

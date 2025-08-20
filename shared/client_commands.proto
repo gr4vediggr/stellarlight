@@ -1,0 +1,141 @@
+syntax = "proto3";
+
+package messages;
+option go_package = "pkg/messages";
+
+// =============================================================================
+// CLIENT COMMANDS (Client -> Server)
+// =============================================================================
+
+// Main command wrapper from client
+message ClientCommand {
+    string player_id = 1;
+    int64 timestamp = 2;
+    
+    oneof command {
+        // Lobby Commands
+        LobbyCommand lobby_command = 10;
+        
+        // Game Commands
+        GameCommand game_command = 20;
+        
+        // Chat Commands
+        ChatCommand chat_command = 30;
+
+        PingCommand ping_command = 40;
+    }
+}
+
+// =============================================================================
+// LOBBY COMMANDS
+// =============================================================================
+
+message LobbyCommand {
+    oneof action {
+        JoinLobbyCommand join_lobby = 1;
+        LeaveLobbyCommand leave_lobby = 2;
+        SetReadyCommand set_ready = 3;
+        SetColorCommand set_color = 4;
+        UpdateSettingsCommand update_settings = 5;
+        StartGameCommand start_game = 6;
+    }
+}
+
+message JoinLobbyCommand {
+    string invite_code = 1;
+}
+
+message LeaveLobbyCommand {
+    // Empty - player ID is in parent ClientCommand
+}
+
+message SetReadyCommand {
+    bool ready = 1;
+}
+
+message SetColorCommand {
+    string color = 1;
+}
+
+message UpdateSettingsCommand {
+    GalaxyGenerateSettings settings = 1;
+}
+
+message StartGameCommand {
+    // Empty - uses current lobby settings
+}
+
+// =============================================================================
+// GAME COMMANDS
+// =============================================================================
+
+message GameCommand {
+    oneof action {
+        MoveFleetCommand move_fleet = 1;
+        QueueConstructionCommand queue_construction = 2;
+        QueueFleetConstructionCommand queue_fleet_construction = 3;
+        // Add more game commands as needed
+    }
+}
+
+message MoveFleetCommand {
+    uint64 fleet_id = 1;
+    uint64 destination_star_id = 2;
+}
+
+message QueueConstructionCommand {
+    uint64 colony_id = 1;
+    string building_type = 2;
+    uint32 quantity = 3;
+}
+
+message QueueFleetConstructionCommand {
+    uint64 colony_id = 1;
+    string ship_type = 2;
+    uint32 quantity = 3;
+}
+
+// =============================================================================
+// CHAT COMMANDS
+// =============================================================================
+
+message ChatCommand {
+    oneof scope {
+        GlobalChatCommand global = 1;
+        PrivateChatCommand private = 2;
+        LobbyChatCommand lobby = 3;
+    }
+}
+
+message GlobalChatCommand {
+    string message = 1;
+}
+
+message PrivateChatCommand {
+    string recipient_id = 1;
+    string message = 2;
+}
+
+message LobbyChatCommand {
+    string message = 1;
+}
+
+// =============================================================================
+// SHARED SETTINGS
+// =============================================================================
+
+message GalaxyGenerateSettings {
+    int32 numStars = 1;
+    string shape = 2;
+    int32 maxHyperlanes = 3;
+    int32 hyperlaneConnectivity = 4;
+}
+
+
+// =============================================================================
+// PING
+// =============================================================================
+
+message PingCommand {
+}
+

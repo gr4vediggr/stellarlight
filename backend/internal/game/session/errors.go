@@ -11,4 +11,5 @@ var (
 	ErrSessionNotFound        = errors.New("session not found")
 	ErrSessionFull            = errors.New("session is full")
 	ErrInvalidCommand         = errors.New("invalid command")
+	ErrInvalidPlayerID        = errors.New("invalid player ID")
 )

@@ -1,0 +1,216 @@
+syntax = "proto3";
+
+import "client_commands.proto";
+
+package messages;
+option go_package = "pkg/messages";
+
+// =============================================================================
+// SERVER MESSAGES (Server -> Client)
+// =============================================================================
+
+// Main message wrapper from server
+message ServerMessage {
+    string message_id = 1;    // Optional response ID
+    int64 timestamp = 2;
+    
+    oneof message {
+        // Lobby Messages
+        LobbyMessage lobby_message = 10;
+        
+        // Game Messages
+        GameMessage game_message = 20;
+        
+        // Chat Messages
+        ChatMessage chat_message = 30;
+        
+        // System Messages
+        SystemMessage system_message = 40;
+        
+        // Error Messages
+        ErrorMessage error_message = 50;
+    }
+}
+
+// =============================================================================
+// LOBBY MESSAGES
+// =============================================================================
+
+message LobbyMessage {
+    oneof content {
+        LobbyStateMessage lobby_state = 1;
+        PlayerJoinedMessage player_joined = 2;
+        PlayerLeftMessage player_left = 3;
+        PlayerUpdatedMessage player_updated = 4;
+        LobbySettingsUpdatedMessage settings_updated = 5;
+        GameStartingMessage game_starting = 6;
+        GameLoadingMessage game_loading = 7;
+    }
+}
+
+// Complete lobby state - sent when player joins or significant changes occur
+message LobbyStateMessage {
+    string session_id = 1;
+    string invite_code = 2;
+    string host_player_id = 3;
+    LobbyStatus status = 4;
+    repeated LobbyPlayer players = 5;
+    GalaxyGenerateSettings settings = 6;
+    
+    enum LobbyStatus {
+        WAITING = 0;
+        STARTING = 1;
+        IN_GAME = 2;
+    }
+}
+
+message LobbyPlayer {
+    string player_id = 1;
+    string display_name = 2;
+    string color = 3;
+    bool is_ready = 4;
+    bool is_host = 5;
+    bool is_connected = 6;
+    int64 joined_at = 7;
+}
+
+// Individual update messages for efficiency
+message PlayerJoinedMessage {
+    LobbyPlayer player = 1;
+}
+
+message PlayerLeftMessage {
+    string player_id = 1;
+    string display_name = 2;
+}
+
+message PlayerUpdatedMessage {
+    LobbyPlayer player = 1;
+}
+
+message LobbySettingsUpdatedMessage {
+    GalaxyGenerateSettings settings = 1;
+    string updated_by_player_id = 2;
+}
+
+message GameStartingMessage {
+    GalaxyGenerateSettings final_settings = 1;
+    int64 start_time = 2;
+}
+
+message GameLoadingMessage {
+    float progress = 1;         // 0.0 to 1.0
+    string status_text = 2;     // "Generating galaxy...", "Creating empires...", etc.
+    string phase = 3;           // "GALAXY_GENERATION", "EMPIRE_SETUP", etc.
+}
+
+// =============================================================================
+// GAME MESSAGES
+// =============================================================================
+
+message GameMessage {
+    oneof content {
+        GameStateMessage game_state = 1;
+        GameEventMessage game_event = 2;
+        TurnUpdateMessage turn_update = 3;
+    }
+}
+
+message GameStateMessage {
+    // Full or partial game state
+    string state_data = 1;      // JSON or binary game state
+    int64 turn_number = 2;
+    int64 game_time = 3;
+}
+
+message GameEventMessage {
+    string event_type = 1;      // "FLEET_ARRIVED", "BATTLE_OCCURRED", etc.
+    string event_data = 2;      // JSON event data
+    repeated string affected_players = 3;
+}
+
+message TurnUpdateMessage {
+    int64 turn_number = 1;
+    int64 turn_deadline = 2;
+    bool is_paused = 3;
+}
+
+// =============================================================================
+// CHAT MESSAGES
+// =============================================================================
+
+message ChatMessage {
+    string sender_id = 1;
+    string sender_display_name = 2;
+    int64 timestamp = 3;
+    
+    oneof scope {
+        GlobalChatMessage global = 10;
+        PrivateChatMessage private = 11;
+        LobbyChatMessage lobby = 12;
+        SystemChatMessage system = 13;
+    }
+}
+
+message GlobalChatMessage {
+    string message = 1;
+}
+
+message PrivateChatMessage {
+    string recipient_id = 1;
+    string message = 2;
+}
+
+message LobbyChatMessage {
+    string message = 1;
+}
+
+message SystemChatMessage {
+    string message = 1;
+    string message_type = 2;    // "INFO", "WARNING", "ERROR"
+}
+
+// =============================================================================
+// SYSTEM MESSAGES
+// =============================================================================
+
+message SystemMessage {
+    oneof content {
+        ConnectionMessage connection = 1;
+        AuthMessage auth = 2;
+        ServerStatusMessage server_status = 3;
+    }
+}
+
+message ConnectionMessage {
+    string status = 1;          // "CONNECTED", "RECONNECTING", "DISCONNECTED"
+    string reason = 2;
+}
+
+message AuthMessage {
+    string status = 1;          // "AUTHENTICATED", "TOKEN_EXPIRED", "INVALID_TOKEN"
+    string message = 2;
+}
+
+message ServerStatusMessage {
+    bool is_maintenance = 1;
+    string version = 2;
+    int32 player_count = 3;
+}
+
+// =============================================================================
+// ERROR MESSAGES
+// =============================================================================
+
+message ErrorMessage {
+    string error_code = 1;      // "LOBBY_FULL", "INVALID_COMMAND", etc.
+    string error_message = 2;
+    string context = 3;         // Additional context for debugging
+    repeated string details = 4; // Detailed error information
+}
+
+// =============================================================================
+// SHARED SETTINGS (imported from client_commands.proto)
+// =============================================================================
+
+// GalaxyGenerateSettings is imported from client_commands.proto

@@ -2,18 +2,19 @@ package database
 
 import (
 	"context"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/gr4vediggr/stellarlight/internal/database/queries"
 	"github.com/gr4vediggr/stellarlight/internal/users"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostgresUserStore struct {
 	queries *queries.Queries
 }
 
-func NewPostgresUserStore(db *pgx.Conn) *PostgresUserStore {
+func NewPostgresUserStore(db *pgxpool.Pool) *PostgresUserStore {
 	return &PostgresUserStore{
 		queries: queries.New(db),
 	}
@@ -36,6 +37,7 @@ func (store *PostgresUserStore) GetUserByEmail(ctx context.Context, email string
 
 func (store *PostgresUserStore) GetUserByID(ctx context.Context, id uuid.UUID) (*users.User, error) {
 	result, err := store.queries.GetUserByID(ctx, id)
+	log.Println("Fetching user by ID:", id, err)
 	if err != nil {
 		return nil, err
 	}
